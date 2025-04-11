@@ -1,0 +1,19 @@
+body {
+  background: linear-gradient(to bottom right, #000428, #004e92);
+  color: #f0f0f0;
+}
+
+.card {
+  background-color: #1f1f2e;
+  border-radius: 1rem;
+  color: #ffffff;
+}
+
+.card-title {
+  font-weight: bold;
+}
+
+input::file-selector-button {
+  background-color: #0d6efd;
+  color: white;
+}
