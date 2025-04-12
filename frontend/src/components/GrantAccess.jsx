@@ -4,24 +4,21 @@ function GrantAccess({ fileId }) {
   const [address, setAddress] = useState('');
 
   const handleGrant = () => {
-    if (!address) return alert('Enter a wallet address!');
-    alert(`Access granted to: ${address} for file #${fileId}`);
+    alert(`Access granted to ${address} for File ID ${fileId}`);
   };
 
   return (
-    <div className="card shadow">
-      <div className="card-body">
-        <h5 className="card-title">👤 Grant Access</h5>
+    <div className="card p-3 border-dark shadow-sm">
+      <h5 className="text-dark">🔑 Grant Access</h5>
+      <div className="input-group">
         <input
           type="text"
-          className="form-control mb-2"
-          placeholder="0xabc123..."
+          className="form-control"
+          placeholder="Wallet address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
-        <button className="btn btn-success" onClick={handleGrant}>
-          Grant Access
-        </button>
+        <button className="btn btn-dark" onClick={handleGrant}>Grant</button>
       </div>
     </div>
   );
