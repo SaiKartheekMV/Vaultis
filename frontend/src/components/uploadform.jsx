@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { getContract } from '../services/contract'; // Make sure this is set up
-import { Web3Storage } from 'web3.storage';
+import { ethers } from 'ethers';
+import { getContract } from '../services/contract';
+import axios from 'axios';
 
 function UploadForm() {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
-
-  // Replace with your own Web3.Storage API key
-  const client = new Web3Storage({ token: 'YOUR_WEB3_STORAGE_API_KEY' });
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -17,25 +15,36 @@ function UploadForm() {
     }
 
     try {
-      setStatus('🔐 Encrypting file...');
-      // TODO: Post-Quantum encryption logic here
-      const encryptedFile = file; // placeholder, replace with actual encrypted blob
+      // Step 1: Request MetaMask wallet connection
+      if (!window.ethereum) {
+        return setStatus("❌ MetaMask not detected.");
+      }
 
-      setStatus('🚀 Uploading to IPFS...');
-      const cid = await client.put([encryptedFile], { wrapWithDirectory: false });
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
-      setStatus(`✅ Uploaded to IPFS: ${cid}`);
+      // Step 2: Encrypt and upload to IPFS via your backend
+      setStatus('🔐 Encrypting and uploading file...');
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload CID to blockchain
-      const contract = getContract();
-      const tx = await contract.storeCID(cid); // or your contract's method
+      const response = await axios.post('http://localhost:5000/api/encrypt-upload', formData);
+      const cid = response.data.cid;
+
+      setStatus(`✅ Uploaded to IPFS. CID: ${cid}`);
+
+      // Step 3: Interact with smart contract using correct function
       setStatus('⏳ Saving CID to blockchain...');
+
+      const contract = await getContract(signer);
+      const tx = await contract.uploadFile(cid);  // ✅ Corrected function name
       await tx.wait();
 
       setStatus('✅ CID saved to blockchain!');
     } catch (error) {
       console.error(error);
-      setStatus('❌ Error during upload or contract interaction.');
+      setStatus('❌ Upload or blockchain interaction failed.');
     }
   };
 
