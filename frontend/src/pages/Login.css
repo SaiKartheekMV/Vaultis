@@ -1,0 +1,58 @@
+.renaissance-bg {
+    background-image: url("https://images.unsplash.com/photo-1601521618339-84d6e6f694e6"); /* Da Vinci sketch */
+    background-size: cover;
+    background-position: center;
+    backdrop-filter: blur(2px);
+  }
+  
+  .login-container {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 2px solid #b8965a;
+    font-family: "Garamond", serif;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 1s ease-in-out forwards;
+  }
+  .animate-fade-in-delayed {
+    animation: fadeIn 1.5s ease-in-out forwards;
+  }
+  .animate-glow {
+    animation: glow 2s infinite ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 10px #b8965a, 0 0 20px #b8965a;
+    }
+    50% {
+      box-shadow: 0 0 20px #fff, 0 0 30px #fff;
+    }
+  }
+  .renaissance-bg {
+    background: radial-gradient(ellipse at center, #1a1a1a, #0d0d0d);
+    background-image: url('/images/da-vinci-bg.jpg'); /* Optional: add background image */
+    background-size: cover;
+    background-blend-mode: multiply;
+  }
+  
+  .glow-text {
+    color: #fff;
+    text-shadow: 0 0 8px #a67c00, 0 0 12px #e6b800, 0 0 16px #fff200;
+  }
+  
+  .glow-button {
+    box-shadow: 0 0 10px #f7d774, 0 0 20px #e6b800;
+    transition: all 0.3s ease;
+  }
+  
+  .glow-button:hover {
+    background-color: #e6b800;
+    color: black;
+    box-shadow: 0 0 20px #f7d774;
+  }
+    
