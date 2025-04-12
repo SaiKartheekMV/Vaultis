@@ -15,6 +15,7 @@ function Files() {
     }
   }, []);
 
+  // This will be replaced later with blockchain call
   const mockFiles = [
     {
       cid: 'bafybeig7cidexampleexample',
@@ -26,16 +27,28 @@ function Files() {
   ];
 
   return (
-    <div className="container">
-      <h4 className="mb-3 text-primary">📁 Your Files</h4>
+    <div className="container mt-4">
+      <div className="text-center mb-4">
+        <h2 className="text-info">🌐 Vaultis Dashboard</h2>
+        <p className="text-muted">Quantum-Secured Data Vault</p>
+        <hr />
+      </div>
+
       <UploadForm />
-      <FileList files={mockFiles} onSelect={setSelectedFile} />
-      {selectedFile && (
-        <>
-          <FileDetails file={selectedFile} />
-          <GrantAccess fileId={1} />
-        </>
-      )}
+
+      <div className="row">
+        <div className="col-md-6">
+          <FileList files={mockFiles} onSelect={setSelectedFile} />
+        </div>
+        <div className="col-md-6">
+          {selectedFile && (
+            <>
+              <FileDetails file={selectedFile} />
+              <GrantAccess fileId={1} />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
