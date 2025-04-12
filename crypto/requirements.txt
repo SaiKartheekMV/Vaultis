@@ -1,0 +1,5 @@
+pynacl
+pycryptodome
+numpy
+fastapi
+uvicorn

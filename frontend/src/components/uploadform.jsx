@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ethers } from 'ethers';
 import { getContract } from '../services/contract';
 import axios from 'axios';
 
 function UploadForm({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
+  const [cid, setCid] = useState('');
+  const [kyberPublicKey, setKyberPublicKey] = useState('');
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -15,39 +16,42 @@ function UploadForm({ onUploadSuccess }) {
     }
 
     try {
-      // Step 1: Request MetaMask connection
       if (!window.ethereum) {
         return setStatus("❌ MetaMask not detected.");
       }
 
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      // Step 2: Encrypt and upload to IPFS via backend
       setStatus('🔐 Encrypting and uploading file to IPFS...');
       const formData = new FormData();
       formData.append('file', file);
 
       const response = await axios.post('http://localhost:5000/api/encrypt-upload', formData);
-      const cid = response.data.cid;
 
-      setStatus(`✅ Uploaded to IPFS! CID: ${cid}`);
+      const { cid, kyber_public_key } = response.data;
 
-      // Step 3: Save CID to blockchain
-      setStatus('⏳ Saving CID to blockchain...');
+      setCid(cid);
+      setKyberPublicKey(kyber_public_key);
+      setStatus(`✅ Uploaded to IPFS! CID: ${cid}\n⏳ Saving CID to blockchain...`);
+
+      // Save CID to blockchain
       const contract = await getContract();
-      const tx = await contract.uploadFile(cid); // Make sure this function exists in your contract
+      const tx = await contract.uploadFile(cid);
       await tx.wait();
 
-      setStatus('✅ CID saved to blockchain!');
-      setFile(null); // Clear file input
+      setStatus('✅ File fully uploaded and saved to blockchain!');
+      setFile(null);
 
-      // Notify parent component
-      if (onUploadSuccess) {
-        onUploadSuccess();
-      }
+      if (onUploadSuccess) onUploadSuccess();
+
     } catch (error) {
       console.error(error);
-      setStatus('❌ Upload or blockchain interaction failed.');
+
+      if (error?.message?.toLowerCase().includes('user rejected')) {
+        setStatus('❌ Transaction rejected by user.');
+      } else {
+        setStatus('❌ Upload or blockchain interaction failed.');
+      }
     }
   };
 
@@ -68,8 +72,15 @@ function UploadForm({ onUploadSuccess }) {
       </button>
 
       {status && (
-        <div className="alert alert-info mt-3" role="alert">
+        <div className="alert alert-info mt-3 white-space-pre-line" role="alert">
           {status}
+        </div>
+      )}
+
+      {cid && (
+        <div className="mt-3 border rounded p-3 bg-white shadow-sm">
+          <div><strong>📦 CID:</strong> <code className="text-danger">{cid}</code></div>
+          <div><strong>🔑 Kyber Public Key:</strong> <code className="text-warning">{kyberPublicKey}</code></div>
         </div>
       )}
     </form>
