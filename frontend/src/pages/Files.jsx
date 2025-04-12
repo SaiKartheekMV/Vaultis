@@ -3,28 +3,52 @@ import UploadForm from '../components/UploadForm';
 import FileList from '../components/FileList';
 import FileDetails from '../components/FileDetails';
 import GrantAccess from '../components/GrantAccess';
+import { getContract } from '../services/contract';
 
 function Files() {
+  const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [userAddress, setUserAddress] = useState('');
 
+  // Load user address from localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUserAddress(storedUser);
     }
   }, []);
 
-  // This will be replaced later with blockchain call
-  const mockFiles = [
-    {
-      cid: 'bafybeig7cidexampleexample',
-      owner: userAddress,
-      uploader: userAddress,
-      timestamp: 1712832123,
-      accessUsers: ['0x456...def', '0x789...ghi'],
-    },
-  ];
+  // Fetch accessible files from the smart contract
+  const fetchFiles = async () => {
+    try {
+      const contract = await getContract();
+      const result = await contract.getAccessibleFiles();
+
+      const [fileIds, cids, owners, uploaders, timestamps] = result;
+
+      const parsedFiles = fileIds.map((id, index) => ({
+        id: Number(id),
+        cid: cids[index],
+        owner: owners[index],
+        uploader: uploaders[index],
+        timestamp: Number(timestamps[index]),
+      }));
+
+      setFiles(parsedFiles);
+    } catch (error) {
+      console.error('❌ Error fetching files:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (userAddress) {
+      fetchFiles();
+    }
+  }, [userAddress]);
+
+  const handleFileUploaded = () => {
+    fetchFiles();
+  };
 
   return (
     <div className="container mt-4">
@@ -34,18 +58,23 @@ function Files() {
         <hr />
       </div>
 
-      <UploadForm />
+      <UploadForm onUploadSuccess={handleFileUploaded} />
 
-      <div className="row">
-        <div className="col-md-6">
-          <FileList files={mockFiles} onSelect={setSelectedFile} />
+      <div className="row mt-4">
+        <div className="col-md-6 mb-4">
+          <FileList files={files} onSelect={setSelectedFile} />
         </div>
+
         <div className="col-md-6">
-          {selectedFile && (
+          {selectedFile ? (
             <>
               <FileDetails file={selectedFile} />
-              <GrantAccess fileId={1} />
+              <GrantAccess fileId={selectedFile.id} />
             </>
+          ) : (
+            <div className="alert alert-secondary">
+              Select a file to view details or grant access.
+            </div>
           )}
         </div>
       </div>

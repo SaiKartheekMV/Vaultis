@@ -19,6 +19,14 @@ contract QuantumStorage {
     event AccessGranted(uint indexed fileId, address indexed grantee);
     event AccessRevoked(uint indexed fileId, address indexed revokedUser);
     event OwnershipTransferred(uint indexed fileId, address indexed oldOwner, address indexed newOwner);
+    // Optional: track file access reads
+    // event FileAccessed(uint indexed fileId, address indexed accessor);
+
+    /// Modifier for file owner only actions
+    modifier onlyOwner(uint fileId) {
+        require(files[fileId].owner == msg.sender, "Not the owner");
+        _;
+    }
 
     /// @notice Upload a new file with CID and save metadata
     function uploadFile(string calldata cid) external {
@@ -37,8 +45,7 @@ contract QuantumStorage {
     }
 
     /// @notice Grant access to a file
-    function grantAccess(uint fileId, address user) external {
-        require(files[fileId].owner == msg.sender, "Not the owner");
+    function grantAccess(uint fileId, address user) external onlyOwner(fileId) {
         require(user != address(0), "Invalid address");
 
         if (!files[fileId].accessList[user]) {
@@ -49,8 +56,7 @@ contract QuantumStorage {
     }
 
     /// @notice Revoke a user's access
-    function revokeAccess(uint fileId, address user) external {
-        require(files[fileId].owner == msg.sender, "Not the owner");
+    function revokeAccess(uint fileId, address user) external onlyOwner(fileId) {
         require(user != msg.sender, "Owner cannot revoke self");
         require(files[fileId].accessList[user], "User doesn't have access");
 
@@ -61,6 +67,7 @@ contract QuantumStorage {
     /// @notice Retrieve CID if access is granted
     function getCID(uint fileId) external view returns (string memory) {
         require(files[fileId].accessList[msg.sender], "Access denied");
+        // emit FileAccessed(fileId, msg.sender); // optional: log read access
         return files[fileId].cid;
     }
 
@@ -70,8 +77,7 @@ contract QuantumStorage {
     }
 
     /// @notice Transfer ownership of the file
-    function transferOwnership(uint fileId, address newOwner) external {
-        require(files[fileId].owner == msg.sender, "Not the owner");
+    function transferOwnership(uint fileId, address newOwner) external onlyOwner(fileId) {
         require(newOwner != address(0), "Invalid new owner");
 
         address oldOwner = files[fileId].owner;
@@ -118,5 +124,46 @@ contract QuantumStorage {
     /// @notice Total number of stored files
     function getTotalFiles() external view returns (uint) {
         return fileCounter;
+    }
+
+    /// @notice Get all files accessible by the user
+    function getAccessibleFiles() external view returns (
+        uint[] memory fileIds,
+        string[] memory cids,
+        address[] memory owners,
+        address[] memory uploaders,
+        uint[] memory timestamps
+    ) {
+        uint total = 0;
+
+        for (uint i = 1; i <= fileCounter; i++) {
+            if (files[i].accessList[msg.sender]) {
+                total++;
+            }
+        }
+
+        fileIds = new uint[](total);
+        cids = new string[](total);
+        owners = new address[](total);
+        uploaders = new address[](total);
+        timestamps = new uint[](total);
+
+        uint index = 0;
+        for (uint i = 1; i <= fileCounter; i++) {
+            if (files[i].accessList[msg.sender]) {
+                fileIds[index] = i;
+                cids[index] = files[i].cid;
+                owners[index] = files[i].owner;
+                uploaders[index] = files[i].uploader;
+                timestamps[index] = files[i].timestamp;
+                index++;
+            }
+        }
+    }
+
+    /// @notice Get access history of a file
+    function getAccessHistory(uint fileId) external view returns (address[] memory) {
+        require(files[fileId].accessList[msg.sender], "Access denied");
+        return files[fileId].accessHistory;
     }
 }

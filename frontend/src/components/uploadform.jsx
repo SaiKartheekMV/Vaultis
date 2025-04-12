@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { getContract } from '../services/contract';
 import axios from 'axios';
 
-function UploadForm() {
+function UploadForm({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
 
@@ -15,33 +15,36 @@ function UploadForm() {
     }
 
     try {
-      // Step 1: Request MetaMask wallet connection
+      // Step 1: Request MetaMask connection
       if (!window.ethereum) {
         return setStatus("❌ MetaMask not detected.");
       }
 
       await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
 
-      // Step 2: Encrypt and upload to IPFS via your backend
-      setStatus('🔐 Encrypting and uploading file...');
+      // Step 2: Encrypt and upload to IPFS via backend
+      setStatus('🔐 Encrypting and uploading file to IPFS...');
       const formData = new FormData();
       formData.append('file', file);
 
       const response = await axios.post('http://localhost:5000/api/encrypt-upload', formData);
       const cid = response.data.cid;
 
-      setStatus(`✅ Uploaded to IPFS. CID: ${cid}`);
+      setStatus(`✅ Uploaded to IPFS! CID: ${cid}`);
 
-      // Step 3: Interact with smart contract using correct function
+      // Step 3: Save CID to blockchain
       setStatus('⏳ Saving CID to blockchain...');
-
-      const contract = await getContract(signer);
-      const tx = await contract.uploadFile(cid);  // ✅ Corrected function name
+      const contract = await getContract();
+      const tx = await contract.uploadFile(cid); // Make sure this function exists in your contract
       await tx.wait();
 
       setStatus('✅ CID saved to blockchain!');
+      setFile(null); // Clear file input
+
+      // Notify parent component
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (error) {
       console.error(error);
       setStatus('❌ Upload or blockchain interaction failed.');
