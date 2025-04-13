@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { getContract } from '../services/contract';
 import axios from 'axios';
 
@@ -7,6 +7,8 @@ function UploadForm({ onUploadSuccess }) {
   const [status, setStatus] = useState('');
   const [cid, setCid] = useState('');
   const [kyberPublicKey, setKyberPublicKey] = useState('');
+  const [encryptedHash, setEncryptedHash] = useState('');
+  const fileInputRef = useRef();
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -27,11 +29,15 @@ function UploadForm({ onUploadSuccess }) {
       formData.append('file', file);
 
       const response = await axios.post('http://localhost:5000/api/encrypt-upload', formData);
+      console.log("Response from server:", response.data);
+      console.log("Public key type:", typeof response.data.kyber_public_key);
+      console.log("Public key value:", response.data.kyber_public_key);
 
-      const { cid, kyber_public_key } = response.data;
+      const { cid, kyber_public_key, encrypted_hash } = response.data;
 
       setCid(cid);
       setKyberPublicKey(kyber_public_key);
+      setEncryptedHash(encrypted_hash);
       setStatus(`✅ Uploaded to IPFS! CID: ${cid}\n⏳ Saving CID to blockchain...`);
 
       // Save CID to blockchain
@@ -41,6 +47,7 @@ function UploadForm({ onUploadSuccess }) {
 
       setStatus('✅ File fully uploaded and saved to blockchain!');
       setFile(null);
+      fileInputRef.current.value = null;
 
       if (onUploadSuccess) onUploadSuccess();
 
@@ -49,6 +56,8 @@ function UploadForm({ onUploadSuccess }) {
 
       if (error?.message?.toLowerCase().includes('user rejected')) {
         setStatus('❌ Transaction rejected by user.');
+      } else if (error?.response?.data?.error) {
+        setStatus(`❌ Server error: ${error.response.data.error}`);
       } else {
         setStatus('❌ Upload or blockchain interaction failed.');
       }
@@ -62,6 +71,7 @@ function UploadForm({ onUploadSuccess }) {
       <div className="mb-3">
         <input
           type="file"
+          ref={fileInputRef}
           className="form-control"
           onChange={(e) => setFile(e.target.files[0])}
         />
@@ -79,8 +89,20 @@ function UploadForm({ onUploadSuccess }) {
 
       {cid && (
         <div className="mt-3 border rounded p-3 bg-white shadow-sm">
-          <div><strong>📦 CID:</strong> <code className="text-danger">{cid}</code></div>
-          <div><strong>🔑 Kyber Public Key:</strong> <code className="text-warning">{kyberPublicKey}</code></div>
+          <div className="mb-2">
+            <strong>📦 CID:</strong>{' '}
+            <code className="text-danger text-break">{cid}</code>
+          </div>
+          <div className="mb-2">
+            <strong>🔑 Kyber Public Key:</strong>
+            <pre className="text-warning small text-break bg-light p-2 border rounded">
+              {kyberPublicKey || "Key not available"}
+            </pre>
+          </div>
+          <div>
+            <strong>📊 Encrypted File Hash (SHA-256):</strong>
+            <code className="text-success text-break">{encryptedHash}</code>
+          </div>
         </div>
       )}
     </form>

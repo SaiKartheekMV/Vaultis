@@ -1,24 +1,31 @@
-import os
+def read_file_as_bytes(file_path):
+    """
+    Read a file from disk and return its contents as bytes.
 
-def read_file_as_bytes(filepath):
-    if not os.path.isfile(filepath):
-        raise FileNotFoundError(f"[❌] File not found: {filepath}")
-    
-    try:
-        with open(filepath, 'rb') as f:
-            data = f.read()
-            print(f"[📥] Read {len(data)} bytes from {filepath}")
-            return data
-    except Exception as e:
-        raise IOError(f"[❌] Failed to read file: {e}")
+    Args:
+        file_path (str): Path to the file to read
 
-def save_bytes_to_file(data, output_path):
+    Returns:
+        bytes: The file contents as bytes
+    """
     try:
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        with open(output_path, 'wb') as f:
-            f.write(data)
-            print(f"[💾] Saved {len(data)} bytes to {output_path}")
+        with open(file_path, 'rb') as file:
+            return file.read()
     except Exception as e:
-        raise IOError(f"[❌] Failed to write file: {e}")
+        print(f"[❌] Error reading file {file_path}: {e}")
+        raise
+
+def save_bytes_to_file(data, file_path):
+    """
+    Save bytes to a file on disk.
+
+    Args:
+        data (bytes): The data to save
+        file_path (str): Path where the file should be saved
+    """
+    try:
+        with open(file_path, 'wb') as file:
+            file.write(data)
+    except Exception as e:
+        print(f"[❌] Error saving to file {file_path}: {e}")
+        raise
