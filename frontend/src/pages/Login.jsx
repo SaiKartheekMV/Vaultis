@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 import './Login.css';
@@ -6,9 +6,9 @@ import './Login.css';
 const Login = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
-  const [account, setAccount] = useState(null);
+  const [, setAccount] = useState(null);
 
-  const connectWallet = useCallback(async () => {
+  const connectWallet = async () => {
     try {
       if (!window.ethereum) {
         setError("🦊 Please install MetaMask to continue.");
@@ -21,31 +21,25 @@ const Login = () => {
 
       setAccount(address);
       localStorage.setItem("user", address);
-      localStorage.setItem("walletConnected", "true");
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
       setError("❌ Wallet connection failed. Try again.");
     }
-  }, []);
+  };
 
-  // Auto-connect if previously connected
+  // Clear MetaMask connection data on tab/window close
   useEffect(() => {
-    const previouslyConnected = localStorage.getItem("walletConnected");
-    if (previouslyConnected) {
-      connectWallet();
-    }
+    localStorage.removeItem("user"); // always clear session on load
 
-    // Disconnect MetaMask (clear state) on window/tab close
     const handleBeforeUnload = () => {
       localStorage.removeItem("user");
-      localStorage.removeItem("walletConnected");
       setAccount(null);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [connectWallet]);
+  }, []);
 
   return (
     <div className="d-flex flex-column justify-content-center align-items-center vh-100 renaissance-bg text-white text-center">
@@ -56,7 +50,7 @@ const Login = () => {
         onClick={connectWallet}
         className="btn btn-outline-light btn-lg px-5 py-2 rounded-pill glow-button"
       >
-        {account ? "✅ Connected" : "🔌 Connect with MetaMask"}
+        🔌 Connect with MetaMask
       </button>
 
       {error && <div className="mt-4 text-danger fw-bold">{error}</div>}
