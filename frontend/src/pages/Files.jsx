@@ -9,6 +9,7 @@ function Files() {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [userAddress, setUserAddress] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Load user address from localStorage
   useEffect(() => {
@@ -23,7 +24,6 @@ function Files() {
     try {
       const contract = await getContract();
       const result = await contract.getAccessibleFiles();
-
       const [fileIds, cids, owners, uploaders, timestamps] = result;
 
       const parsedFiles = fileIds.map((id, index) => ({
@@ -50,6 +50,24 @@ function Files() {
     fetchFiles();
   };
 
+  const handleDelete = async (fileId) => {
+    try {
+      setDeleting(true);
+      const contract = await getContract();
+      const tx = await contract.deleteFile(fileId);
+      await tx.wait();
+
+      // Refresh file list
+      setFiles(files.filter(file => file.id !== fileId));
+      setSelectedFile(null);
+    } catch (error) {
+      console.error('❌ Error deleting file:', error);
+      alert('Delete failed. You may not have permission to delete this file.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="container mt-4">
       <div className="text-center mb-4">
@@ -62,7 +80,12 @@ function Files() {
 
       <div className="row mt-4">
         <div className="col-md-6 mb-4">
-          <FileList files={files} onSelect={setSelectedFile} />
+          <FileList
+            files={files}
+            onSelect={setSelectedFile}
+            onDelete={handleDelete}
+            deleting={deleting}
+          />
         </div>
 
         <div className="col-md-6">
