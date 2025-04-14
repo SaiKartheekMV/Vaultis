@@ -1,60 +1,243 @@
+/* Navbar.css */
+
+/* Dark quantum background for navbar */
+.bg-dark-quantum {
+  background-color: #0c1220 !important;
+  border-bottom: 1px solid #1a2035;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Navbar structure */
+.navbar {
+  height: 60px;
+  padding: 0 1rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: white;
+}
+
+/* Center element for larger screens */
+.navbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.quantum-badge {
+  background-color: #1a2230;
+  color: #00d0ff;
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 10px rgba(0, 208, 255, 0.2);
+}
+
+.quantum-badge-icon {
+  font-size: 1.1rem;
+}
+
+/* Wallet button styling */
+.wallet-button {
+  display: flex;
+  align-items: center;
+}
+
+.eth-balance-btn {
+  background-color: white;
+  color: #000;
+  border-radius: 30px;
+  padding: 0.3rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.eth-balance-btn:hover {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+  background-color: #f8f9fa;
+}
+
+.eth-balance {
+  font-weight: 700;
+}
+
+.wallet-fox {
+  font-size: 1.2rem;
+}
+
+.wallet-address {
+  color: #333;
+}
+
+.dropdown-arrow {
+  color: #666;
+  margin-left: 0.2rem;
+}
+
+/* Modal styles */
 .wallet-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.wallet-content {
+  background: #111927;
+  border-radius: 12px;
+  padding: 25px;
+  width: 350px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(78, 120, 255, 0.2);
+  border: 1px solid #2e3b52;
+  color: white;
+}
+
+.wallet-header {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wallet-header h5 {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #00d0ff;
+}
+
+.wallet-icon {
+  width: 60px;
+  height: 60px;
+  padding: 10px;
+  background-color: #1e2639;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  border: 2px solid #3a4c6d;
+}
+
+.wallet-info {
+  background-color: #1a2230;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #2e3b52;
+}
+
+.wallet-address {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+  color: #fff;
+  word-break: break-all;
+}
+
+.wallet-balance {
+  color: #00d0ff;
+  font-size: 1.2rem;
+  margin-bottom: 0;
+}
+
+.modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-buttons button {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.modal-buttons .copy-btn {
+  background: #1e2639;
+  color: #fff;
+  border: 1px solid #3a4c6d;
+}
+
+.modal-buttons .copy-btn:hover {
+  background: #2a3650;
+}
+
+.modal-buttons .disconnect {
+  background: #ff5252;
+  color: white;
+}
+
+.modal-buttons .disconnect:hover {
+  background: #ff3838;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #1e2639;
+  border: 1px solid #3a4c6d;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background: #2a3650;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .navbar-center {
+    display: none;
   }
   
-  .wallet-content {
-    background: white;
-    border-radius: 12px;
-    padding: 20px 30px;
-    width: 300px;
-    text-align: center;
-    position: relative;
+  .eth-balance-btn {
+    padding: 0.3rem 0.5rem;
   }
   
-  .wallet-icon {
-    width: 50px;
-    margin-bottom: 10px;
+  .eth-balance {
+    font-size: 0.9rem;
   }
   
   .wallet-address {
-    font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
   }
-  
-  .wallet-balance {
-    color: gray;
-    margin-bottom: 15px;
+}
+
+@media (max-width: 576px) {
+  .wallet-content {
+    width: 90%;
+    max-width: 350px;
   }
-  
-  .modal-buttons button {
-    margin: 5px;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  
-  .modal-buttons .disconnect {
-    background: #f44336;
-    color: white;
-  }
-  
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-  
+}

@@ -66,9 +66,20 @@ function Navbar() {
 
   return (
     <>
-      <nav className="navbar navbar-dark bg-dark shadow">
-        <div className="container-fluid d-flex justify-content-between align-items-center">
-          <span className="navbar-brand mb-0 h1">🧠 Vaultis Dashboard</span>
+      <nav className="navbar navbar-dark bg-dark-quantum">
+        <div className="container-fluid">
+          <div className="d-flex align-items-center">
+            <span className="navbar-brand mb-0 h1">
+              <span className="me-2">☢️</span>
+              Quantum Menu
+            </span>
+          </div>
+          <div className="navbar-center d-none d-md-block">
+            <div className="quantum-badge">
+              <span className="quantum-badge-icon">💬</span>
+              Vaultis Dashboard
+            </div>
+          </div>
           {connecting ? (
             <div className="d-flex align-items-center">
               <div className="spinner-border spinner-border-sm text-light me-2" role="status">
@@ -77,23 +88,16 @@ function Navbar() {
               <span className="text-light">Connecting wallet...</span>
             </div>
           ) : address ? (
-            <div className="metamask-button d-flex align-items-center">
-              <div
-                className="btn bg-light rounded-pill px-3 py-1 d-flex align-items-center gap-2"
+            <div className="wallet-button">
+              <button 
+                className="btn eth-balance-btn"
                 onClick={() => setShowModal(true)}
-                style={{ cursor: 'pointer' }}
               >
-                <span className="text-dark fw-bold">{balance} ETH</span>
-                <img
-                  src="/metamask-icon.svg"
-                  className="metamask-icon"
-                  alt="wallet"
-                  width="24"
-                  height="24"
-                />
-                <span className="text-dark fw-semibold">{truncateAddress(address)}</span>
-                <span className="text-dark">▾</span>
-              </div>
+                <span className="eth-balance">{balance} ETH</span>
+                <span className="wallet-fox">🦊</span>
+                <span className="wallet-address">{truncateAddress(address)}</span>
+                <span className="dropdown-arrow">▾</span>
+              </button>
             </div>
           ) : (
             <button 
@@ -111,13 +115,18 @@ function Navbar() {
         <div className="wallet-modal" onClick={() => setShowModal(false)}>
           <div className="wallet-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-            <img
-              src="/metamask-icon.svg"
-              alt="wallet"
-              className="wallet-icon"
-            />
-            <p className="wallet-address" title={address}>{truncateAddress(address)}</p>
-            <p className="wallet-balance">{balance} ETH</p>
+            <div className="wallet-header">
+              <img
+                src="/metamask-icon.svg"
+                alt="wallet"
+                className="wallet-icon"
+              />
+              <h5>Wallet Details</h5>
+            </div>
+            <div className="wallet-info">
+              <p className="wallet-address" title={address}>{truncateAddress(address)}</p>
+              <p className="wallet-balance">{balance} ETH</p>
+            </div>
             <div className="modal-buttons">
               <button onClick={copyToClipboard} className="copy-btn">
                 📋 Copy Address

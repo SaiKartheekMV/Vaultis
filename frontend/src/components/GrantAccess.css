@@ -1,0 +1,190 @@
+/* Quantum Blockchain Theme - CSS Stylesheet */
+
+/* Custom backgrounds */
+.quantum-bg {
+    background-color: #12002e;
+    background-image: 
+      linear-gradient(rgba(66, 0, 128, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66, 0, 128, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .quantum-bg::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(138, 43, 226, 0.1) 0%, rgba(18, 0, 46, 0) 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  /* Custom card styling */
+  .card.bg-dark {
+    background-color: #0a0018 !important;
+    box-shadow: 0 4px 20px rgba(138, 43, 226, 0.2);
+  }
+  
+  .card-header.bg-gradient {
+    background: linear-gradient(90deg, #12002e, #3a006f);
+  }
+  
+  .border-primary {
+    border-color: #6e11c9 !important;
+  }
+  
+  /* Form elements styling */
+  .form-control.bg-dark, .input-group-text.bg-dark {
+    background-color: #1a0040 !important;
+    border-color: #6e11c9 !important;
+  }
+  
+  .form-control.bg-dark:focus {
+    box-shadow: 0 0 0 0.25rem rgba(110, 17, 201, 0.25);
+  }
+  
+  .form-control.bg-dark::placeholder {
+    color: #8c7ba1;
+  }
+  
+  /* Button customization */
+  .btn-primary {
+    background: linear-gradient(135deg, #6e11c9, #3a006f);
+    border-color: #6e11c9;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8316e9, #4a0091);
+    border-color: #8316e9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(110, 17, 201, 0.4);
+  }
+  
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  .btn-primary:disabled {
+    background: linear-gradient(135deg, #4a1775, #290050);
+    border-color: #4a1775;
+    opacity: 0.7;
+  }
+  
+  /* Alert styling */
+  .alert-danger {
+    background-color: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.5);
+    color: #ff8f9a;
+  }
+  
+  .alert-success {
+    background-color: rgba(25, 135, 84, 0.2);
+    border-color: rgba(25, 135, 84, 0.5);
+    color: #75e0ab;
+  }
+  
+  /* Text colors */
+  .text-primary {
+    color: #a26fef !important;
+  }
+  
+  .text-light {
+    color: #cdc0e3 !important;
+  }
+  
+  /* Input group focus state */
+  .input-group:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(110, 17, 201, 0.25);
+    border-radius: 0.25rem;
+  }
+  
+  /* Icon styling */
+  .bi {
+    vertical-align: -0.125em;
+  }
+  
+  /* Glossy effect for certain elements */
+  .card-header, .btn-primary {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-header::after, .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      to bottom right, 
+      rgba(255, 255, 255, 0.2) 0%, 
+      rgba(255, 255, 255, 0.05) 40%, 
+      rgba(255, 255, 255, 0) 50%
+    );
+    transform: rotate(-45deg);
+    pointer-events: none;
+  }
+  
+  /* Quantum particle animation */
+  @keyframes quantum-float {
+    0% { opacity: 0; transform: translateY(0); }
+    50% { opacity: 0.5; }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+  
+  .quantum-bg::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(110, 17, 201, 0.4) 0%, rgba(110, 17, 201, 0) 20%),
+      radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.3) 0%, rgba(138, 43, 226, 0) 40%),
+      radial-gradient(circle at 80% 20%, rgba(75, 0, 130, 0.4) 0%, rgba(75, 0, 130, 0) 30%);
+    filter: blur(8px);
+    opacity: 0.3;
+    animation: quantum-float 8s infinite ease-in-out;
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767.98px) {
+    .btn-primary {
+      margin-top: 1rem;
+    }
+  }
+  
+  /* Focus outline for accessibility */
+  :focus {
+    outline: 2px solid rgba(110, 17, 201, 0.5);
+    outline-offset: 2px;
+  }
+  
+  /* Dark scrollbar for containers */
+  .quantum-bg::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .quantum-bg::-webkit-scrollbar-track {
+    background: #12002e;
+  }
+  
+  .quantum-bg::-webkit-scrollbar-thumb {
+    background: #3a006f;
+    border-radius: 4px;
+  }
+  
+  .quantum-bg::-webkit-scrollbar-thumb:hover {
+    background: #6e11c9;
+  }
