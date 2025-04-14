@@ -1,16 +1,293 @@
+/* Main App Styles */
+:root {
+  --primary-color: #3042c9;
+  --primary-light: #5674FF;
+  --primary-dark: #1d2d95;
+  --secondary-color: #00f2fe;
+  --secondary-light: #4facfe;
+  --dark-bg: #080d1f;
+  --darker-bg: #05081a;
+  --card-bg: rgba(13, 17, 38, 0.7);
+  --text-primary: #ffffff;
+  --text-secondary: #a2b0d3;
+  --text-muted: #6c7a9c;
+  --border-color: rgba(66, 99, 235, 0.2);
+  --success-color: #3dd598;
+  --warning-color: #ffc25c;
+  --danger-color: #ff5b79;
+  --info-color: #0095ff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  background: radial-gradient(ellipse at top, #0f2027, #203a43, #2c5364);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+
+a {
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: var(--secondary-light);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+/* App Layout */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease;
+  background: linear-gradient(135deg, #0f1b30 0%, #0c0f26 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.main-content.expanded {
+  margin-left: 70px;
+}
+
+.content-container {
+  padding: 20px;
+  margin-top: 70px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(13, 17, 38, 0.7);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(66, 99, 235, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(66, 99, 235, 0.5);
+}
+
+/* Card Styles */
+.quantum-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.quantum-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.quantum-card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(13, 25, 53, 0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quantum-card-body {
+  padding: 20px;
+}
+
+/* Button Styles */
+.quantum-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
   color: white;
-  font-family: 'Segoe UI', sans-serif;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(48, 66, 201, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-h1, h2, h3 {
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+.quantum-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
 }
 
-.card {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+.quantum-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(48, 66, 201, 0.3);
+}
+
+.quantum-btn:hover::before {
+  left: 100%;
+}
+
+.quantum-btn:active {
+  transform: translateY(0);
+}
+
+.quantum-btn-outline {
+  background: transparent;
+  border: 1px solid var(--primary-light);
+  color: var(--primary-light);
+  box-shadow: none;
+}
+
+.quantum-btn-outline:hover {
+  background: rgba(48, 66, 201, 0.1);
+}
+
+.quantum-btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.quantum-btn-lg {
+  padding: 12px 24px;
+  font-size: 1rem;
+}
+
+/* Form Styles */
+.quantum-form-group {
+  margin-bottom: 20px;
+}
+
+.quantum-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.quantum-input {
+  width: 100%;
+  background: rgba(13, 17, 38, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 15px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.quantum-input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(48, 66, 201, 0.1);
+}
+
+/* Alert Styles */
+.quantum-alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.quantum-alert-success {
+  background: rgba(61, 213, 152, 0.1);
+  border-left: 3px solid var(--success-color);
+  color: var(--success-color);
+}
+
+.quantum-alert-warning {
+  background: rgba(255, 194, 92, 0.1);
+  border-left: 3px solid var(--warning-color);
+  color: var(--warning-color);
+}
+
+.quantum-alert-danger {
+  background: rgba(255, 91, 121, 0.1);
+  border-left: 3px solid var(--danger-color);
+  color: var(--danger-color);
+}
+
+.quantum-alert-info {
+  background: rgba(0, 149, 255, 0.1);
+  border-left: 3px solid var(--info-color);
+  color: var(--info-color);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .main-content {
+    margin-left: 200px;
+  }
+  
+  .main-content.expanded {
+    margin-left: 60px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .main-content.expanded {
+    margin-left: 60px;
+  }
+  
+  .content-container {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .content-container {
+    padding: 10px;
+  }
 }

@@ -1,58 +1,318 @@
-.renaissance-bg {
-    background-image: url("https://images.unsplash.com/photo-1601521618339-84d6e6f694e6"); /* Da Vinci sketch */
-    background-size: cover;
-    background-position: center;
-    backdrop-filter: blur(2px);
-  }
-  
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f1b30 0%, #162040 50%, #0c0f26 100%);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Quantum particles background effect */
+.quantum-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(28, 209, 255, 0.05) 0%, transparent 20%),
+    radial-gradient(circle at 90% 30%, rgba(249, 85, 255, 0.05) 0%, transparent 20%),
+    radial-gradient(circle at 50% 80%, rgba(99, 255, 181, 0.05) 0%, transparent 30%);
+  animation: particleMove 25s infinite linear;
+  z-index: 1;
+}
+
+@keyframes particleMove {
+  0% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  100% { background-position: 100% 100%, 100% 100%, 100% 100%; }
+}
+
+.login-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  width: 90%;
+  max-width: 1100px;
+  min-height: 600px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(13, 17, 38, 0.7);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              0 0 40px rgba(58, 143, 255, 0.1);
+  border: 1px solid rgba(66, 99, 235, 0.2);
+  z-index: 2;
+}
+
+@media (max-width: 992px) {
   .login-container {
-    background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid #b8965a;
-    font-family: "Garamond", serif;
+    flex-direction: column;
+    min-height: auto;
   }
-  
-  .animate-fade-in {
-    animation: fadeIn 1s ease-in-out forwards;
+}
+
+/* Left section with logo and branding */
+.branding-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  background: linear-gradient(135deg, rgba(27, 37, 89, 0.95) 0%, rgba(28, 35, 75, 0.95) 100%);
+  border-right: 1px solid rgba(66, 153, 235, 0.2);
+  text-align: center;
+}
+
+@media (max-width: 992px) {
+  .branding-section {
+    padding: 2rem;
+    border-right: none;
+    border-bottom: 1px solid rgba(66, 153, 235, 0.2);
   }
-  .animate-fade-in-delayed {
-    animation: fadeIn 1.5s ease-in-out forwards;
+}
+
+.logo-container {
+  margin-bottom: 2rem;
+}
+
+/* Quantum logo animation */
+.quantum-logo {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+}
+
+.atom-core {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, #4facfe 0%, #00f2fe 100%);
+  border-radius: 50%;
+  top: 45px;
+  left: 45px;
+  box-shadow: 0 0 20px rgba(79, 172, 254, 0.8);
+  animation: pulse 3s infinite ease-in-out;
+}
+
+.atom-orbit {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  top: 10px;
+  left: 10px;
+  border: 2px solid rgba(0, 242, 254, 0.5);
+  animation: rotate 10s infinite linear;
+}
+
+.atom-orbit.two {
+  width: 90px;
+  height: 90px;
+  top: 15px;
+  left: 15px;
+  border-color: rgba(79, 172, 254, 0.5);
+  animation-duration: 7s;
+  animation-direction: reverse;
+}
+
+.atom-orbit.three {
+  width: 80px;
+  height: 80px;
+  top: 20px;
+  left: 20px;
+  border-color: rgba(0, 242, 254, 0.5);
+  animation-duration: 5s;
+}
+
+@keyframes rotate {
+  0% { transform: rotateZ(0deg) rotateX(60deg) rotateY(0deg); }
+  100% { transform: rotateZ(360deg) rotateX(60deg) rotateY(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(79, 172, 254, 0.8); }
+  50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(79, 172, 254, 1); }
+}
+
+.app-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 4px;
+}
+
+.tagline {
+  color: #8a9cd8;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+/* Right section with login form */
+.login-section {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+@media (max-width: 992px) {
+  .login-section {
+    padding: 2rem;
   }
-  .animate-glow {
-    animation: glow 2s infinite ease-in-out;
-  }
-  
-  @keyframes fadeIn {
-    0% { opacity: 0; transform: translateY(10px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes glow {
-    0%, 100% {
-      box-shadow: 0 0 10px #b8965a, 0 0 20px #b8965a;
-    }
-    50% {
-      box-shadow: 0 0 20px #fff, 0 0 30px #fff;
-    }
-  }
-  .renaissance-bg {
-    background: radial-gradient(ellipse at center, #1a1a1a, #0d0d0d);
-    background-image: url('/images/da-vinci-bg.jpg'); /* Optional: add background image */
-    background-size: cover;
-    background-blend-mode: multiply;
-  }
-  
-  .glow-text {
-    color: #fff;
-    text-shadow: 0 0 8px #a67c00, 0 0 12px #e6b800, 0 0 16px #fff200;
-  }
-  
-  .glow-button {
-    box-shadow: 0 0 10px #f7d774, 0 0 20px #e6b800;
-    transition: all 0.3s ease;
-  }
-  
-  .glow-button:hover {
-    background-color: #e6b800;
-    color: black;
-    box-shadow: 0 0 20px #f7d774;
-  }
-    
+}
+
+.welcome-text {
+  font-size: 1.8rem;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.description {
+  color: #a2b0d3;
+  margin-bottom: 2.5rem;
+  font-size: 1rem;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.connect-wallet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #3042c9 0%, #5674FF 100%);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 0.9rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 250px;
+  box-shadow: 0 10px 20px rgba(48, 66, 201, 0.2), 
+              0 0 0 2px rgba(48, 66, 201, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.connect-wallet-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
+}
+
+.connect-wallet-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 25px rgba(48, 66, 201, 0.3),
+              0 0 0 2px rgba(48, 66, 201, 0.2);
+}
+
+.connect-wallet-btn:hover::before {
+  left: 100%;
+}
+
+.connect-wallet-btn:active {
+  transform: translateY(0);
+}
+
+.connect-wallet-btn.connecting {
+  background: linear-gradient(90deg, #2a3996 0%, #4056c9 100%);
+  cursor: not-allowed;
+}
+
+.metamask-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  fill: white;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #ff5b79;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 91, 121, 0.1);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 3px solid #ff5b79;
+}
+
+.security-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  background: rgba(48, 66, 201, 0.1);
+  border: 1px solid rgba(48, 66, 201, 0.2);
+  border-radius: 30px;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.badge:hover {
+  transform: translateY(-2px);
+  background: rgba(48, 66, 201, 0.15);
+}
+
+.badge-icon {
+  margin-right: 6px;
+  font-size: 0.9rem;
+}
+
+.badge-text {
+  color: #a2b0d3;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.version-badge {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  backdrop-filter: blur(5px);
+  z-index: 3;
+}
