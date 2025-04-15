@@ -264,11 +264,11 @@ p {
 /* Responsive */
 @media (max-width: 1200px) {
   .main-content {
-    margin-left: 200px;
+    margin-left: 0px;
   }
   
   .main-content.expanded {
-    margin-left: 60px;
+    margin-left: 0px;
   }
 }
 
@@ -278,16 +278,16 @@ p {
   }
   
   .main-content.expanded {
-    margin-left: 60px;
+    margin-left: 0px;
   }
   
   .content-container {
-    padding: 15px;
+    padding: 0px;
   }
 }
 
 @media (max-width: 576px) {
   .content-container {
-    padding: 10px;
+    padding: 0px;
   }
 }
