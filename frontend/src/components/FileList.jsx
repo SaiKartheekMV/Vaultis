@@ -8,6 +8,19 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
     return cid.length > 16 ? `${cid.substring(0, 8)}...${cid.substring(cid.length - 8)}` : cid;
   };
 
+  // Filter out invalid files (files with empty or placeholder CIDs)
+  const validFiles = files.filter(file => {
+    // Check if file has a valid CID (not empty and not a placeholder)
+    const hasValidCid = file.cid && 
+                       file.cid !== '0x0000000000000000000000000000000000000000' &&
+                       !file.cid.startsWith('0x000000000');
+    
+    // Check if file has a valid timestamp
+    const hasValidTimestamp = file.timestamp && parseInt(file.timestamp) > 0;
+    
+    return hasValidCid && hasValidTimestamp;
+  });
+
   return (
     <div className="file-list-container">
       {/* Background pattern */}
@@ -30,13 +43,13 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
           </span>
           Distributed Ledger Files
           <span className="file-count-badge">
-            {files.length}
+            {validFiles.length}
           </span>
         </h3>
       </div>
       
       {/* Empty state */}
-      {files.length === 0 && (
+      {validFiles.length === 0 && (
         <div className="empty-state">
           <svg xmlns="http://www.w3.org/2000/svg" className="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -47,10 +60,10 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
       )}
       
       {/* File list */}
-      {files.length > 0 && (
+      {validFiles.length > 0 && (
         <div className="file-list">
           <div className="file-list-content">
-            {files.map((file, index) => (
+            {validFiles.map((file, index) => (
               <div 
                 key={file.id || index} 
                 className="file-item"
@@ -71,7 +84,7 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
                       )}
                     </div>
                     <div className="file-date">
-                      Added: {file.dateFormatted || 'Unknown date'}
+                      Added: {file.dateFormatted || new Date(file.timestamp * 1000).toLocaleString() || 'Unknown date'}
                     </div>
                   </div>
                   

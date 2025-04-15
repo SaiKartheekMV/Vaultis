@@ -143,35 +143,6 @@ function FileDetails({ file, fileId, currentAddress, contract, onRefresh }) {
     }
   };
 
-  // Grant access to another user
-  const handleGrantAccess = async (event) => {
-    event.preventDefault();
-    const addressInput = event.target.elements.userAddress.value;
-    
-    if (!addressInput || !addressInput.startsWith('0x')) {
-      setError('Please enter a valid Ethereum address');
-      return;
-    }
-    
-    try {
-      setError('');
-      // Call the contract's grantAccess function
-      await contract.methods.grantAccess(fileId, addressInput)
-        .send({ from: currentAddress });
-      
-      // Refresh the access list
-      await loadAccessList();
-      
-      // Clear the input
-      event.target.reset();
-      
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Error granting access:', error);
-      setError(error.message || 'Failed to grant access');
-    }
-  };
-
   // Revoke access from a user
   const handleRevokeAccess = async (address) => {
     try {
@@ -335,28 +306,10 @@ function FileDetails({ file, fileId, currentAddress, contract, onRefresh }) {
           </div>
         </div>
         
-        {/* Access control section - only shown to owner */}
+        {/* Access list section - only shown to owner */}
         {isOwner && (
           <div className="access-control-section">
-            <h4 className="access-control-title">Access Control</h4>
-            
-            {/* Grant access form */}
-            <form onSubmit={handleGrantAccess} className="grant-access-form">
-              <input 
-                type="text" 
-                name="userAddress" 
-                placeholder="Enter ethereum address to grant access"
-                className="address-input"
-                required
-              />
-              <button type="submit" className="btn-grant-access">
-                <svg xmlns="http://www.w3.org/2000/svg" className="grant-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M11 6a3 3 0 11-6 0 3 3 0 016 0zM14 17a6 6 0 00-12 0h12z" />
-                  <path d="M13 8a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1V9a1 1 0 011-1z" />
-                </svg>
-                Grant Access
-              </button>
-            </form>
+            <h4 className="access-control-title">Access Management</h4>
             
             {/* Access list */}
             <div className="access-list">
