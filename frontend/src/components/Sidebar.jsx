@@ -66,7 +66,7 @@ function Sidebar() {
             fontFamily: 'monospace',
             letterSpacing: '1px'
           }}>
-            QUANTUM NEXUS
+            VAULTIS
           </h4>
         )}
       </div>
