@@ -4,7 +4,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Alert from 'react-bootstrap/Alert';
 import Spinner from 'react-bootstrap/Spinner';
-import UploadForm from '../components/UploadForm';
+import UploadForm from '../components/uploadform';
 import { getContract } from '../services/contract';
 
 function Files() {
