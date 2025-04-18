@@ -9,7 +9,6 @@ function GrantAccess() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [currentAddress, setCurrentAddress] = useState('');
-  const [isOwner, setIsOwner] = useState(true); // Default to true for the page version
 
   // Fetch user's blockchain address on component mount
   useEffect(() => {
