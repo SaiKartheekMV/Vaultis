@@ -27,9 +27,14 @@ function BlockchainExplorer() {
                 </p>
                 <div className="d-flex flex-column gap-4 mt-4">
                   <div className="d-flex align-items-start gap-3">
-                    <div className="d-flex align-items-center justify-content-center rounded-circle p-3" 
-                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf', color: '#e0aaff', width: '60px', height: '60px', border: '1px solid #7b2cbf' }}>
+                    <div className="d-flex align-items-center justify-content-center quantum-feature-icon" 
+                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf' }}>
                       <i className="bi bi-shield-lock fs-4"></i>
+                      <svg className="quantum-symbol shield-symbol" viewBox="0 0 100 100">
+                        <path d="M50 10 L90 30 L90 60 C90 75 70 90 50 90 C30 90 10 75 10 60 L10 30 Z" fill="none" stroke="#c77dff" strokeWidth="3"/>
+                        <path d="M40 40 L60 60 M60 40 L40 60" stroke="#e0aaff" strokeWidth="3"/>
+                        <circle cx="50" cy="50" r="15" stroke="#9d4edd" strokeWidth="3" fill="none"/>
+                      </svg>
                     </div>
                     <div>
                       <h5 style={{ color: '#c77dff' }}>Quadrivium of Encryption</h5>
@@ -37,9 +42,20 @@ function BlockchainExplorer() {
                     </div>
                   </div>
                   <div className="d-flex align-items-start gap-3">
-                    <div className="d-flex align-items-center justify-content-center rounded-circle p-3" 
-                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf', color: '#e0aaff', width: '60px', height: '60px', border: '1px solid #7b2cbf' }}>
+                    <div className="d-flex align-items-center justify-content-center quantum-feature-icon" 
+                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf' }}>
                       <i className="bi bi-hdd-network fs-4"></i>
+                      <svg className="quantum-symbol network-symbol" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="20" fill="none" stroke="#c77dff" strokeWidth="3"/>
+                        <circle cx="20" cy="30" r="10" fill="none" stroke="#e0aaff" strokeWidth="3"/>
+                        <circle cx="80" cy="30" r="10" fill="none" stroke="#e0aaff" strokeWidth="3"/>
+                        <circle cx="20" cy="70" r="10" fill="none" stroke="#e0aaff" strokeWidth="3"/>
+                        <circle cx="80" cy="70" r="10" fill="none" stroke="#e0aaff" strokeWidth="3"/>
+                        <line x1="30" y1="30" x2="40" y2="40" stroke="#9d4edd" strokeWidth="3"/>
+                        <line x1="70" y1="40" x2="80" y2="30" stroke="#9d4edd" strokeWidth="3"/>
+                        <line x1="30" y1="70" x2="40" y2="60" stroke="#9d4edd" strokeWidth="3"/>
+                        <line x1="70" y1="60" x2="80" y2="70" stroke="#9d4edd" strokeWidth="3"/>
+                      </svg>
                     </div>
                     <div>
                       <h5 style={{ color: '#c77dff' }}>The Golden Network</h5>
@@ -47,9 +63,15 @@ function BlockchainExplorer() {
                     </div>
                   </div>
                   <div className="d-flex align-items-start gap-3">
-                    <div className="d-flex align-items-center justify-content-center rounded-circle p-3" 
-                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf', color: '#e0aaff', width: '60px', height: '60px', border: '1px solid #7b2cbf' }}>
+                    <div className="d-flex align-items-center justify-content-center quantum-feature-icon" 
+                         style={{ backgroundColor: '#3c096c', borderColor: '#7b2cbf' }}>
                       <i className="bi bi-key fs-4"></i>
+                      <svg className="quantum-symbol key-symbol" viewBox="0 0 100 100">
+                        <circle cx="30" cy="50" r="15" fill="none" stroke="#c77dff" strokeWidth="3"/>
+                        <path d="M45 50 L80 50 L80 40 L90 40 L90 60 L80 60 L80 50" stroke="#e0aaff" strokeWidth="3" fill="none"/>
+                        <circle cx="30" cy="50" r="5" fill="none" stroke="#9d4edd" strokeWidth="3"/>
+                        <path d="M65 50 L65 40 M65 50 L65 60" stroke="#e0aaff" strokeWidth="3"/>
+                      </svg>
                     </div>
                     <div>
                       <h5 style={{ color: '#c77dff' }}>Vaultis Access Control</h5>
@@ -283,38 +305,31 @@ function BlockchainExplorer() {
           </div>
         </div>
         
-        {/* Footer */}
+        {/* Footer with Improved Particle Effect */}
         <footer className="text-center mt-5">
           <div style={{ height: '50px', position: 'relative' }} className="mb-3">
-            {/* Quantum particle effect using CSS */}
-            <div style={{ 
-              position: 'absolute', 
-              width: '5px', 
-              height: '5px', 
-              borderRadius: '50%', 
-              backgroundColor: '#c77dff',
-              boxShadow: '0 0 8px #c77dff',
+            <div className="quantum-particle" style={{ 
+              width: '8px', 
+              height: '8px', 
               left: '30%',
+              backgroundColor: '#c77dff',
+              boxShadow: '0 0 12px #c77dff',
               animation: 'float 3s infinite alternate'
             }}></div>
-            <div style={{ 
-              position: 'absolute', 
-              width: '5px', 
-              height: '5px', 
-              borderRadius: '50%', 
-              backgroundColor: '#e0aaff',
-              boxShadow: '0 0 8px #e0aaff',
+            <div className="quantum-particle" style={{ 
+              width: '8px', 
+              height: '8px', 
               left: '45%',
+              backgroundColor: '#e0aaff',
+              boxShadow: '0 0 12px #e0aaff',
               animation: 'float 4s infinite alternate-reverse'
             }}></div>
-            <div style={{ 
-              position: 'absolute', 
-              width: '5px', 
-              height: '5px', 
-              borderRadius: '50%', 
-              backgroundColor: '#9d4edd',
-              boxShadow: '0 0 8px #9d4edd',
+            <div className="quantum-particle" style={{ 
+              width: '8px', 
+              height: '8px', 
               left: '60%',
+              backgroundColor: '#9d4edd',
+              boxShadow: '0 0 12px #9d4edd',
               animation: 'float 5s infinite alternate'
             }}></div>
           </div>
@@ -325,15 +340,6 @@ function BlockchainExplorer() {
           <div style={{ height: '3px', width: '80%', margin: '1.5rem auto', background: 'linear-gradient(90deg, transparent, #7b2cbf, #5a189a, #7b2cbf, transparent)', borderRadius: '2px' }}></div>
         </footer>
       </div>
-      
-      {/* Add the CSS for the particle animation */}
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0); }
-          50% { transform: translateY(-15px); }
-          100% { transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
