@@ -10,7 +10,7 @@ function Sidebar() {
     { path: '/', name: 'Quantum Dashboard', icon: '⚛️' },
     { path: '/blockchain', name: 'Blockchain Explorer', icon: '🔗' },
     { path: '/wallet', name: 'Crypto Wallet', icon: '💰' },
-    { path: '/nodes', name: 'Node Network', icon: '🌐' },
+    { path: '/network', name: 'Node Network', icon: '🌐' },
     { path: '/files', name: 'Encrypted Files', icon: '🔐' },
     { path: '/grant-access', name: 'Grant access', icon: '🗝️' },
     { path: '/settings', name: 'System Config', icon: '⚙️' }
@@ -38,7 +38,7 @@ function Sidebar() {
         onClick={toggleSidebar}
         style={{ 
           top: '10px', 
-          right: '-12px',
+          right: '-0px',
           zIndex: 100,
           background: '#16213e',
           color: '#0cebf3',

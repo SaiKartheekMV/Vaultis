@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
+import Blockchain from './pages/BlockchainExplorer';
+import NodeNetwork from './pages/NodeNetwork';
 import Files from './pages/Files';
 import GrantAccess from './pages/GrantAccess';
 import Settings from './pages/Settings';
@@ -47,7 +49,20 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
-       //
+        <Route path="/blockchain" element={
+          <ProtectedRoute>
+            <Layout>
+              <Blockchain />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/network" element={
+          <ProtectedRoute>
+            <Layout>
+              <NodeNetwork />
+            </Layout>
+          </ProtectedRoute>
+        } />
         <Route path="/files" element={
           <ProtectedRoute>
             <Layout>
