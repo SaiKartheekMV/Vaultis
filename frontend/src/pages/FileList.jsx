@@ -1,25 +1,38 @@
 import React from 'react';
-import './FileList.css';
+import './FileList.css'; // Keep the CSS import as in your original code
 
-function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
+function FileList({ files = [], onSelect, onDelete, deleting, currentAddress }) {
   // Function to truncate CIDs for better display
   const truncateCid = (cid) => {
     if (!cid) return '';
     return cid.length > 16 ? `${cid.substring(0, 8)}...${cid.substring(cid.length - 8)}` : cid;
   };
 
-  // Filter out invalid files (files with empty or placeholder CIDs)
-  const validFiles = files.filter(file => {
-    // Check if file has a valid CID (not empty and not a placeholder)
-    const hasValidCid = file.cid && 
-                       file.cid !== '0x0000000000000000000000000000000000000000' &&
-                       !file.cid.startsWith('0x000000000');
-    
-    // Check if file has a valid timestamp
-    const hasValidTimestamp = file.timestamp && parseInt(file.timestamp) > 0;
-    
-    return hasValidCid && hasValidTimestamp;
-  });
+  // Check if user is owner or uploader of the file
+  const isFileOwnerOrUploader = (file) => {
+    return (
+      file.isOwner || 
+      (file.uploader && currentAddress && file.uploader.toLowerCase() === currentAddress.toLowerCase())
+    );
+  };
+
+  // Handle selection safely
+  const handleSelect = (file) => {
+    if (onSelect && typeof onSelect === 'function') {
+      onSelect(file);
+    } else {
+      console.warn('onSelect handler is not defined');
+    }
+  };
+
+  // Handle deletion safely
+  const handleDelete = (fileId) => {
+    if (onDelete && typeof onDelete === 'function') {
+      onDelete(fileId);
+    } else {
+      console.warn('onDelete handler is not defined');
+    }
+  };
 
   return (
     <div className="file-list-container">
@@ -27,7 +40,7 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
       <div className="file-list-background">
         <svg width="100%" height="100%">
           <pattern id="fileListGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="0.5"/>
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
           </pattern>
           <rect width="100%" height="100%" fill="url(#fileListGrid)" />
         </svg>
@@ -43,13 +56,13 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
           </span>
           Distributed Ledger Files
           <span className="file-count-badge">
-            {validFiles.length}
+            {Array.isArray(files) ? files.length : 0}
           </span>
         </h3>
       </div>
       
       {/* Empty state */}
-      {validFiles.length === 0 && (
+      {(!Array.isArray(files) || files.length === 0) && (
         <div className="empty-state">
           <svg xmlns="http://www.w3.org/2000/svg" className="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -60,12 +73,12 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
       )}
       
       {/* File list */}
-      {validFiles.length > 0 && (
+      {Array.isArray(files) && files.length > 0 && (
         <div className="file-list">
           <div className="file-list-content">
-            {validFiles.map((file, index) => (
+            {files.map((file, index) => (
               <div 
-                key={file.id || index} 
+                key={file.id || file.cid || `file-${index}`} 
                 className="file-item"
               >
                 <div className="file-item-content">
@@ -74,24 +87,43 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
                       <svg xmlns="http://www.w3.org/2000/svg" className="file-icon" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                       </svg>
+                      
+                      {/* File name if available */}
+                      {(file.original_filename || file.name) && (
+                        <span className="file-name">
+                          {file.original_filename || file.name}
+                        </span>
+                      )}
+                      
+                      {/* CID display */}
                       <span className="file-cid" title={file.cid}>
                         {truncateCid(file.cid)}
                       </span>
-                      {file.isOwner && (
+                      
+                      {/* Owner badge */}
+                      {isFileOwnerOrUploader(file) && (
                         <span className="owner-badge">
                           Owner
                         </span>
                       )}
                     </div>
+                    
                     <div className="file-date">
-                      Added: {file.dateFormatted || new Date(file.timestamp * 1000).toLocaleString() || 'Unknown date'}
+                      Added: {file.dateFormatted || new Date(file.date || Date.now()).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </div>
                   </div>
                   
                   <div className="file-actions">
                     <button
                       className="view-button"
-                      onClick={() => onSelect(file)}
+                      onClick={() => handleSelect(file)}
+                      disabled={!file || !file.cid}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="button-icon" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -100,13 +132,13 @@ function FileList({ files, onSelect, onDelete, deleting, currentAddress }) {
                       View
                     </button>
                     
-                    {(file.isOwner || file.uploader?.toLowerCase() === currentAddress?.toLowerCase()) && (
+                    {isFileOwnerOrUploader(file) && (
                       <button
-                        className="delete-button"
-                        onClick={() => onDelete(file.id)}
-                        disabled={deleting}
+                        className={`delete-button ${deleting === file.id || deleting === file.cid ? 'deleting' : ''}`}
+                        onClick={() => handleDelete(file.id || file.cid)}
+                        disabled={deleting || !file || (!file.id && !file.cid)}
                       >
-                        {deleting ? (
+                        {deleting === file.id || deleting === file.cid ? (
                           <>
                             <svg className="loading-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="loading-circle" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
