@@ -68,10 +68,6 @@ function UploadForm({ onUploadSuccess }) {
     }
   };
 
-  const truncateText = (text, maxLength = 20) => {
-    if (!text || text.length <= maxLength) return text;
-    return `${text.substring(0, maxLength)}...`;
-  };
 
   return (
     <div className="card border-0 p-0 mb-4 shadow-lg overflow-hidden" style={{

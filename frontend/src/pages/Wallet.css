@@ -1,0 +1,340 @@
+/* Wallet.css - Dark Da Vinci theme with quantum/blockchain aesthetics */
+
+:root {
+    --davinci-dark: #121223;
+    --davinci-deeper: #0d0d1a;
+    --davinci-paper: #201c2b;
+    --quantum-blue: #4e6fff;
+    --quantum-purple: #6e4ff7;
+    --quantum-teal: #3dcad3;
+    --accent-gold: #c6a87d;
+    --text-light: #e6e6fa;
+    --text-dimmed: #9c96b3;
+  }
+  
+  body {
+    background-color: var(--davinci-deeper);
+    color: var(--text-light);
+  }
+  
+  .wallet-container {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--davinci-dark);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Da Vinci grid pattern background */
+  .wallet-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627,2.008 C54.627,2.008 50.5,32.2487 30.342,32.2487 C10.185,32.2487 6.37275,2.008 6.37275,2.008 M54.627,32.2487 C54.627,32.2487 50.5,62.5 30.342,62.5 C10.185,62.5 6.37275,32.2487 6.37275,32.2487 M32.3554,2.008 C32.3554,2.008 30.342,62.5 30.342,62.5 C30.342,62.5 28.3295,2.008 28.3295,2.008 M2.008,30.232 C2.008,30.232 62.5,30.232 62.5,30.232 C62.5,30.232 2.008,34.265 2.008,34.265' fill='none' stroke='%233f365f' stroke-width='0.5' opacity='0.1'/%3E%3C/svg%3E");
+    opacity: 0.35;
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  /* Main wallet card with quantum gradient */
+  .wallet-card {
+    border: none;
+    background: linear-gradient(135deg, #1e1b31, #2b2152);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(110, 79, 247, 0.2);
+  }
+  
+  .quantum-gradient::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+      rgba(110, 79, 247, 0.4) 0%, 
+      rgba(61, 202, 211, 0.2) 50%, 
+      rgba(78, 111, 255, 0.4) 100%);
+    z-index: -1;
+  }
+  
+  .disconnect-btn {
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s;
+  }
+  
+  .disconnect-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 15px rgba(110, 79, 247, 0.5);
+  }
+  
+  .address-text {
+    font-family: 'Courier New', monospace;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--quantum-teal);
+  }
+  
+  .balance-container {
+    margin-top: 1rem;
+    padding: 10px 15px;
+    background-color: rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    display: inline-block;
+    border-left: 3px solid var(--quantum-purple);
+  }
+  
+  /* Transaction card styling */
+  .transaction-card, .files-card {
+    border-radius: 10px;
+    border: 1px solid rgba(110, 79, 247, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    background-color: var(--davinci-paper);
+  }
+  
+  .transaction-card .card-header, .files-card .card-header {
+    background-color: rgba(110, 79, 247, 0.15);
+    border-bottom: 1px solid rgba(110, 79, 247, 0.2);
+    padding: 1rem 1.5rem;
+    color: var(--text-light);
+  }
+  
+  .transaction-table, .files-table {
+    margin-bottom: 0;
+    color: var(--text-light);
+  }
+  
+  .transaction-table thead th, .files-table thead th {
+    border-top: none;
+    border-bottom: 1px solid rgba(110, 79, 247, 0.3);
+    color: var(--text-dimmed);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+  }
+  
+  .transaction-table tbody td, .files-table tbody td {
+    border-color: rgba(110, 79, 247, 0.1);
+  }
+  
+  .tx-id, .cid-text {
+    font-family: 'Courier New', monospace;
+    color: var(--quantum-teal);
+  }
+  
+  .quantum-algo {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: rgba(61, 202, 211, 0.1);
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: var(--quantum-teal);
+    border: 1px solid rgba(61, 202, 211, 0.3);
+  }
+  
+  /* Info cards */
+  .info-card {
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background-color: var(--davinci-paper);
+    color: var(--text-light);
+  }
+  
+  .info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .info-card-1 {
+    border-left: 4px solid var(--quantum-purple);
+  }
+  
+  .info-card-2 {
+    border-left: 4px solid var(--quantum-teal);
+  }
+  
+  .info-card-3 {
+    border-left: 4px solid var(--quantum-blue);
+  }
+  
+  .algorithm-list {
+    margin-top: 12px;
+  }
+  
+  .storage-meter {
+    margin-top: 15px;
+  }
+  
+  .storage-bar {
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+  
+  .storage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--quantum-purple), var(--quantum-blue));
+    border-radius: 4px;
+  }
+  
+  .access-btn {
+    margin-top: 10px;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+  }
+  
+  .access-btn:hover {
+    background-color: rgba(110, 79, 247, 0.15);
+    border-color: var(--quantum-purple);
+  }
+  
+  /* Da Vinci footer */
+  .davinci-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(110, 79, 247, 0.2);
+    position: relative;
+  }
+  
+  .quote-text {
+    color: var(--accent-gold);
+    font-style: italic;
+    font-family: 'Georgia', serif;
+  }
+  
+  .davinci-sketch {
+    position: absolute;
+    bottom: -50px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='none' stroke='%23c6a87d' stroke-width='0.5' opacity='0.5'/%3E%3Cpath d='M50,5 v90 M5,50 h90 M26,26 L74,74 M26,74 L74,26' stroke='%23c6a87d' stroke-width='0.5' opacity='0.3'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%23c6a87d' stroke-width='0.5' opacity='0.7'/%3E%3C/svg%3E");
+    opacity: 0.6;
+  }
+  
+  /* Quantum loading spinner */
+  .quantum-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+  }
+  
+  .quantum-spinner .circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid transparent;
+    mix-blend-mode: overlay;
+  }
+  
+  .quantum-spinner .circle:nth-child(1) {
+    border-top-color: var(--quantum-purple);
+    animation: spin 1.5s linear infinite;
+  }
+  
+  .quantum-spinner .circle:nth-child(2) {
+    border-right-color: var(--quantum-blue);
+    animation: spin 2s linear infinite;
+  }
+  
+  .quantum-spinner .circle:nth-child(3) {
+    border-bottom-color: var(--quantum-teal);
+    animation: spin 2.5s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .loading-text {
+    color: var(--quantum-teal);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+  }
+  
+  /* Table hover effects */
+  .transaction-table tbody tr:hover, .files-table tbody tr:hover {
+    background-color: rgba(110, 79, 247, 0.1);
+  }
+  
+  /* Badge styling */
+  .badge.bg-info {
+    background-color: var(--quantum-teal) !important;
+  }
+  
+  .badge.bg-success {
+    background-color: #2eca8b !important;
+  }
+  
+  .badge.bg-warning {
+    background-color: #ffb547 !important;
+    color: #212529;
+  }
+  
+  .badge.bg-primary {
+    background-color: var(--quantum-purple) !important;
+  }
+  
+  /* Button styling */
+  .btn-outline-primary {
+    border-color: var(--quantum-blue);
+    color: var(--quantum-blue);
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: var(--quantum-blue);
+    color: white;
+  }
+  
+  .btn-outline-secondary, .btn-outline-success {
+    color: var(--text-light);
+  }
+  
+  .btn-outline-secondary:hover {
+    background-color: rgba(110, 79, 247, 0.2);
+    border-color: var(--quantum-purple);
+    color: var(--text-light);
+  }
+  
+  .btn-outline-success:hover {
+    background-color: rgba(46, 202, 139, 0.2);
+    border-color: #2eca8b;
+    color: var(--text-light);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .wallet-container {
+      padding: 1rem;
+    }
+    
+    .info-card {
+      margin-bottom: 1rem;
+    }
+  }

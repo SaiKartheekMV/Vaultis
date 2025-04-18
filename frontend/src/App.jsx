@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
 import GrantAccess from './pages/GrantAccess';
+import Wallet from './pages/Wallet';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import './App.css';
@@ -59,6 +60,13 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <GrantAccess />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/wallet" element={
+          <ProtectedRoute>
+            <Layout>
+              <Wallet />
             </Layout>
           </ProtectedRoute>
         } />

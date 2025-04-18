@@ -6,6 +6,7 @@ import uuid
 import traceback
 import hashlib
 import requests
+import time  # Import time at the beginning to avoid the error
 
 # 🔧 Ensure project root is in sys.path
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -19,7 +20,7 @@ from crypto.decryptor import decrypt_file_with_kyber
 
 # 🔧 Flask app setup
 app = Flask(__name__)
-# FIX: Enable CORS for all routes without restrictions
+# FIX: Enable CORS for all routes with explicit origins
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 # Add the missing get_from_pinata function directly in app.py
@@ -136,8 +137,16 @@ def encrypt_and_upload():
                 os.remove(path)
                 print(f"[🧹] Deleted temp file: {path}")
 
-@app.route("/api/download/<cid>", methods=["GET"])
+@app.route("/api/download/<cid>", methods=["GET", "OPTIONS"])
 def download_file(cid):
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({"status": "ok"})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+        
     print(f"[🔄] Download request received for CID: {cid}")
     
     # Create temp directory if it doesn't exist
@@ -381,8 +390,6 @@ if __name__ == "__main__":
     if 'requests' not in sys.modules:
         print("[❌] The 'requests' module is required. Install it with: pip install requests")
         sys.exit(1)
-    
-    import time  # Import time module for cleanup function
     
     print("[🚀] Starting Flask server on http://localhost:5000")
     app.run(port=5000, debug=True)
