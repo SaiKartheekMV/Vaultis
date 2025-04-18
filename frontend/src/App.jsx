@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
+import GrantAccess from './pages/GrantAccess';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import './App.css';
@@ -15,33 +16,15 @@ const ProtectedRoute = ({ children }) => {
 
 const PublicRoute = ({ children }) => {
   const user = localStorage.getItem("user");
-  return user ? <Navigate to="/dashboard" /> : children;
+  return user ? <Navigate to="/" /> : children;
 };
 
 const Layout = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth < 992);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  // Handle responsive resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 992) {
-        setSidebarCollapsed(true);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <div className="app-layout">
-      <Sidebar collapsed={sidebarCollapsed} />
-      <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
-        <Navbar toggleSidebar={toggleSidebar} />
+      <Sidebar />
+      <div className="main-content">
+        <Navbar />
         <div className="content-container">{children}</div>
       </div>
     </div>
@@ -57,17 +40,25 @@ function App() {
             <Login />
           </PublicRoute>
         } />
-        <Route path="/dashboard" element={
+        <Route path="/" element={
           <ProtectedRoute>
             <Layout>
               <Dashboard />
             </Layout>
           </ProtectedRoute>
         } />
+       //
         <Route path="/files" element={
           <ProtectedRoute>
             <Layout>
               <Files />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/grant-access" element={
+          <ProtectedRoute>
+            <Layout>
+              <GrantAccess />
             </Layout>
           </ProtectedRoute>
         } />

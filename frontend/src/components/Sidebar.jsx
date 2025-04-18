@@ -11,8 +11,8 @@ function Sidebar() {
     { path: '/blockchain', name: 'Blockchain Explorer', icon: '🔗' },
     { path: '/wallet', name: 'Crypto Wallet', icon: '💰' },
     { path: '/nodes', name: 'Node Network', icon: '🌐' },
-    { path: '/trading', name: 'Trading Analytics', icon: '📈' },
     { path: '/files', name: 'Encrypted Files', icon: '🔐' },
+    { path: '/grant-access', name: 'Grant access', icon: '🗝️' },
     { path: '/settings', name: 'System Config', icon: '⚙️' }
   ];
 
@@ -25,7 +25,7 @@ function Sidebar() {
       style={{
         width: collapsed ? '80px' : '250px',
         minWidth: collapsed ? '80px' : '250px',
-        height: '100vh',
+        height: 'auto',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
         boxShadow: '0 0 20px rgba(0, 195, 255, 0.15)',
         position: 'relative',
