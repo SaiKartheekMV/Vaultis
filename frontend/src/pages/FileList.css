@@ -1,0 +1,311 @@
+/* FileList.css */
+.file-list-container {
+  position: relative;
+  background-color: #1a1a2e;
+  color: #e6e6e6;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.file-list-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+.file-list-header {
+  position: relative;
+  margin-bottom: 20px;
+  z-index: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.file-list-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.file-list-icon-container {
+  display: inline-flex;
+  margin-right: 8px;
+}
+
+.file-list-icon {
+  width: 20px;
+  height: 20px;
+  color: #4f8bff;
+}
+
+.file-count-badge {
+  background-color: #4f8bff;
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  background-color: rgba(26, 26, 46, 0.6);
+  border-radius: 6px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.empty-state-icon {
+  width: 50px;
+  height: 50px;
+  color: #4f8bff;
+  margin-bottom: 16px;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+}
+
+.empty-state-subtitle {
+  font-size: 14px;
+  color: #a0a0b0;
+  margin: 0;
+}
+
+.file-list {
+  position: relative;
+  z-index: 1;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 0 -8px;
+  padding: 0 8px;
+}
+
+.file-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-item {
+  background-color: rgba(30, 30, 50, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(79, 139, 255, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.file-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.file-item-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .file-item-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.file-info {
+  flex: 1;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 640px) {
+  .file-info {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+}
+
+.file-info-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.file-icon {
+  width: 18px;
+  height: 18px;
+  color: #4f8bff;
+  margin-right: 6px;
+}
+
+.file-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #ffffff;
+  word-break: break-word;
+  margin-right: 8px;
+}
+
+.file-cid {
+  font-size: 12px;
+  color: #a0a0b0;
+  background-color: rgba(20, 20, 35, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.owner-badge {
+  background-color: #4f8bff;
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.file-date {
+  font-size: 12px;
+  color: #a0a0b0;
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .file-actions {
+    flex-shrink: 0;
+  }
+}
+
+.view-button, .delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-button {
+  background-color: #4f8bff;
+  color: #ffffff;
+  border: none;
+}
+
+.view-button:hover {
+  background-color: #3a7bff;
+}
+
+.delete-button {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #ff4d4d;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.delete-button:hover {
+  background-color: rgba(220, 38, 38, 0.2);
+}
+
+.delete-button.deleting {
+  background-color: rgba(100, 100, 100, 0.2);
+  color: #a0a0b0;
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  cursor: not-allowed;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+}
+
+.loading-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-circle {
+  opacity: 0.25;
+}
+
+.loading-path {
+  opacity: 0.75;
+}
+
+.security-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+}
+
+.security-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: rgba(79, 139, 255, 0.1);
+  border-radius: 50%;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.security-icon {
+  width: 16px;
+  height: 16px;
+  color: #4f8bff;
+}
+
+.security-text {
+  font-size: 12px;
+  color: #a0a0b0;
+  line-height: 1.5;
+}
