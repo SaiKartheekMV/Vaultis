@@ -619,7 +619,7 @@ function Dashboard() {
                 </div>
               </div>
               
-              <div className="d-flex gap-4 mb-3">
+              <div className="d-flex   gap-4 mb-3">
                 <div>
                   <div className="h4 mb-0 text-success">{Object.values(integrityResults).filter(Boolean).length}</div>
                   <div className="text-muted">Verified</div>
