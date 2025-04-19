@@ -70,22 +70,21 @@ function Navbar() {
         <div className="container-fluid">
           <div className="d-flex align-items-center">
             <span className="navbar-brand mb-0 h1">
-              <span className="me-2">☢️</span>
-              Quantum Menu
+              <span className="brand-text">SECURE</span>
             </span>
           </div>
           <div className="navbar-center d-none d-md-block">
             <div className="quantum-badge">
-              <span className="quantum-badge-icon">💬</span>
-              Vaultis Dashboard
+              <div className="quantum-badge-icon">🔐</div>
+              <span className="quantum-badge-text">Blockchain+PQC</span>
             </div>
           </div>
           {connecting ? (
-            <div className="d-flex align-items-center">
-              <div className="spinner-border spinner-border-sm text-light me-2" role="status">
+            <div className="d-flex align-items-center connecting-indicator">
+              <div className="connecting-spinner" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <span className="text-light">Connecting wallet...</span>
+              <span className="connecting-text">Connecting wallet...</span>
             </div>
           ) : address ? (
             <div className="wallet-button">
@@ -94,6 +93,7 @@ function Navbar() {
                 onClick={() => setShowModal(true)}
               >
                 <span className="eth-balance">{balance} ETH</span>
+                <span className="wallet-divider"></span>
                 <span className="wallet-fox">🦊</span>
                 <span className="wallet-address">{truncateAddress(address)}</span>
                 <span className="dropdown-arrow">▾</span>
@@ -101,10 +101,11 @@ function Navbar() {
             </div>
           ) : (
             <button 
-              className="btn btn-outline-light" 
+              className="btn connect-wallet-btn" 
               onClick={() => navigate('/login')}
             >
-              Connect Wallet
+              <span className="connect-wallet-icon">🔗</span>
+              <span className="connect-wallet-text">Connect Wallet</span>
             </button>
           )}
         </div>
@@ -116,23 +117,30 @@ function Navbar() {
           <div className="wallet-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             <div className="wallet-header">
-              <img
-                src="/metamask-icon.svg"
-                alt="wallet"
-                className="wallet-icon"
-              />
-              <h5>Wallet Details</h5>
+              <div className="wallet-icon-container">
+                <img
+                  src="/metamask-icon.svg"
+                  alt="wallet"
+                  className="wallet-icon"
+                />
+              </div>
+              <h5 className="wallet-title">Quantum Wallet</h5>
             </div>
             <div className="wallet-info">
               <p className="wallet-address" title={address}>{truncateAddress(address)}</p>
-              <p className="wallet-balance">{balance} ETH</p>
+              <div className="balance-container">
+                <p className="wallet-balance">{balance} ETH</p>
+                <div className="balance-decoration"></div>
+              </div>
             </div>
             <div className="modal-buttons">
               <button onClick={copyToClipboard} className="copy-btn">
-                📋 Copy Address
+                <span className="btn-icon">📋</span>
+                <span className="btn-text">Copy Address</span>
               </button>
               <button onClick={disconnect} className="disconnect">
-                🔌 Disconnect
+                <span className="btn-icon">🔌</span>
+                <span className="btn-text">Disconnect</span>
               </button>
             </div>
           </div>
