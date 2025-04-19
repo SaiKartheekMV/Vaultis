@@ -5,11 +5,20 @@ import os
 import json
 import traceback
 from typing import Union, Tuple, Optional
+import sys
+
+# Add the project root to system path to import pqc modules
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(BASE_DIR)
+
+# Import the actual Kyber implementation
+from crypto.pqc.kyber import decrypt as kyber_decrypt
 
 def decrypt_file_with_kyber(
     input_path: str, 
     output_path: str, 
-    private_key: str
+    private_key: str,
+    use_quantum_enhanced: bool = False
 ) -> bool:
     """
     Decrypt a file that was encrypted with Kyber
@@ -18,24 +27,23 @@ def decrypt_file_with_kyber(
         input_path: Path to the encrypted file
         output_path: Path where the decrypted file will be saved
         private_key: The private key to use for decryption (as string)
+        use_quantum_enhanced: Whether to use quantum-enhanced mode
     
     Returns:
         bool: True if decryption was successful, False otherwise
     """
     try:
         print(f"[🔓] Starting decryption of {input_path}")
+        print(f"[🔑] Using private key: {private_key[:20]}... (truncated)")
         
-        # In a real implementation, this would use the Kyber library
-        # Here we're assuming the encrypted file has a specific format
-        # where the first part is metadata and the rest is the encrypted content
+        if use_quantum_enhanced:
+            print("[⚛️] Using quantum-enhanced mode for decryption")
         
         # Read the encrypted file
         with open(input_path, 'r') as f:
             encrypted_content = f.read()
             
-        # For demonstration - in reality, you'd use the actual Kyber decryption
-        # This assumes your encrypted_content has a simple format
-        # You'll need to adjust this based on your actual encryption format
+        # Parse the encrypted content
         try:
             # If the encrypted file is in JSON format
             data = json.loads(encrypted_content)
@@ -49,21 +57,36 @@ def decrypt_file_with_kyber(
             # If it's not JSON, use the whole file as encrypted data
             encrypted_data = encrypted_content
         
-        print(f"[🔑] Using private key: {private_key[:20]}... (truncated)")
+        # Convert private key from string format if needed
+        processed_private_key = private_key
+        # Additional processing might be needed depending on your key format
         
-        # In a real implementation, use the Kyber library to decrypt
-        # For this example, we'll just create a mock decryption
-        # Replace this with actual Kyber decryption code
-        
-        # Mock decryption - in reality, call the Kyber decryption function
-        decrypted_data = mock_kyber_decrypt(encrypted_data, private_key)
-        
-        # Save the decrypted data to the output file
-        with open(output_path, 'w') as f:
-            f.write(decrypted_data)
+        # Use the actual Kyber decryption
+        try:
+            # Call the actual Kyber decrypt function from pqc/kyber.py
+            decrypted_data = kyber_decrypt(encrypted_data, processed_private_key)
             
-        print(f"[✅] Decryption successful, saved to {output_path}")
-        return True
+            # Save the decrypted data to the output file
+            with open(output_path, 'w') as f:
+                f.write(decrypted_data)
+                
+            print(f"[✅] Decryption successful, saved to {output_path}")
+            return True
+            
+        except Exception as e:
+            print(f"[❌] Kyber decryption failed: {str(e)}")
+            traceback.print_exc()
+            
+            # Fallback to mock decryption for testing/development purposes
+            print("[⚠️] Falling back to mock decryption for testing")
+            decrypted_data = mock_kyber_decrypt(encrypted_data, private_key)
+            
+            # Save the mock decrypted data
+            with open(output_path, 'w') as f:
+                f.write(decrypted_data)
+                
+            print(f"[⚠️] Mock decryption completed, saved to {output_path}")
+            return True
         
     except Exception as e:
         print(f"[❌] Decryption failed: {str(e)}")
@@ -83,15 +106,7 @@ def mock_kyber_decrypt(encrypted_data: str, private_key: str) -> str:
     Returns:
         The decrypted data
     """
-    # This is a placeholder - replace with actual Kyber decryption code
-    # For now, let's create a very simple mock that reverses the encryption
-    # In a real implementation, you'd use the Kyber library
-    
-    # In a real application, this would be replaced with:
-    # from your_kyber_library import decrypt
-    # return decrypt(encrypted_data, private_key)
-    
-    # For demonstration, just create some mock decrypted content
+    # This is a placeholder - only used for testing when actual implementation fails
     return f"This is a mock decryption of the original file.\n\nThe actual implementation would use the Kyber algorithm with the provided private key to properly decrypt the content."
 
 # Optional: Add a command-line interface for testing

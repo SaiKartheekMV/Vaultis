@@ -73,6 +73,44 @@ def get_from_pinata(cid, output_path):
     Returns True if successful, False otherwise
     """
     try:
+        # Try multiple gateways in case one fails
+        gateways = [
+            f"https://gateway.pinata.cloud/ipfs/{cid}",
+            f"https://ipfs.io/ipfs/{cid}",
+            f"https://cloudflare-ipfs.com/ipfs/{cid}"
+        ]
+        
+        for gateway_url in gateways:
+            try:
+                print(f"[🔍] Trying IPFS gateway: {gateway_url}")
+                
+                # Make the request to download the file
+                response = requests.get(gateway_url, stream=True, timeout=30)
+                response.raise_for_status()
+                
+                # Save the file to the specified output path
+                with open(output_path, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
+                
+                print(f"[✅] Successfully downloaded file to {output_path}")
+                return True
+            except requests.RequestException as gateway_error:
+                print(f"[⚠️] Gateway {gateway_url} failed: {gateway_error}")
+                continue
+        
+        print(f"[❌] All IPFS gateways failed for CID: {cid}")
+        return False
+        
+    except Exception as e:
+        print(f"[❌] Error downloading from IPFS: {e}")
+        traceback.print_exc()
+        return False
+    """
+    Download a file from Pinata IPFS by its CID and save it to output_path
+    Returns True if successful, False otherwise
+    """
+    try:
         # IPFS gateway URL (could be Pinata's gateway or any public gateway)
         gateway_url = f"https://gateway.pinata.cloud/ipfs/{cid}"
         
@@ -155,9 +193,7 @@ def encrypt_and_upload():
         # 🔐 Encrypt using Kyber with quantum enhancements if enabled
         encrypted_data, public_key, private_key = encrypt_file_with_kyber(
             input_path=temp_input_path,
-            output_path=temp_encrypted_path,
-            use_quantum_enhanced=use_quantum_enhanced,
-            entropy_source=quantum_settings["entropy_source"] if use_quantum_enhanced else "System"
+            output_path=temp_encrypted_path
         )
         
         if not encrypted_data:
@@ -394,8 +430,87 @@ def download_and_decrypt(cid):
         # After-request cleanup will handle this
         pass
 
-@app.route("/api/private-key/<key_id>", methods=["GET"])
-def get_private_key(key_id):
+
+@app.route('/api/download-decrypt', methods=['POST'])
+def download_decrypt():
+    try:
+        data = request.json
+        cid = data.get('cid')
+        private_key = data.get('private_key')
+        original_filename = data.get('original_filename', f"decrypted-{cid[:8]}")
+        
+        if not cid or not private_key:
+            return jsonify({'error': 'CID and private key are required'}), 400
+            
+        # Create temp directory if it doesn't exist
+        os.makedirs("temp", exist_ok=True)
+        
+        # Generate temporary file paths
+        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
+        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
+        
+        # Download encrypted file from IPFS/Pinata
+        download_success = get_from_pinata(cid, temp_downloaded_path)
+        
+        if not download_success:
+            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
+        
+        # Get current security settings
+        settings = get_blockchain_settings()
+        quantum_settings = settings["quantum_protection"]
+        use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
+        
+        # Decrypt the file
+        decryption_success = decrypt_file_with_kyber(
+            input_path=temp_downloaded_path,
+            output_path=temp_decrypted_path,
+            private_key=private_key,
+            use_quantum_enhanced=use_quantum_enhanced
+        )
+        
+        if not decryption_success:
+            return jsonify({"error": "Failed to decrypt file"}), 500
+        
+        # Return the decrypted file with proper CORS headers
+        response = send_file(
+            temp_decrypted_path,
+            as_attachment=True,
+            download_name=original_filename,
+            mimetype="application/octet-stream"
+        )
+        
+        # Add CORS headers explicitly
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        
+        return response
+        
+    except Exception as e:
+        print(f"[❌] Error during file download and decryption: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
+
+
+@app.route('/api/private-key', methods=['GET'])
+def get_private_key():
+    key_name = request.args.get('key_name')
+    if not key_name:
+        return jsonify({'error': 'Key name is required'}), 400
+    
+    # Path to your temp folder where keys are stored
+    key_path = os.path.join('temp', key_name)
+    
+    try:
+        # Read the private key file
+        with open(key_path, 'r') as f:
+            private_key = f.read()
+        
+        return jsonify({'private_key': private_key})
+    except FileNotFoundError:
+        return jsonify({'error': 'Private key not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     try:
         # Security check to prevent path traversal
         if ".." in key_id or "/" in key_id or "\\" in key_id:
