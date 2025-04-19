@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { getContract } from '../services/contract';
 
 function Dashboard() {
-  const [userAddress, setUserAddress] = useState('');
+  // Removed unused userAddress state
   const [stats, setStats] = useState({
     totalFiles: 0,
     sharedFiles: 0,
@@ -32,7 +32,7 @@ function Dashboard() {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUserAddress(storedUser);
+      // setUserAddress(storedUser); // Removed as it is not defined or used
       fetchUserStats(storedUser);
       fetchAllFiles(storedUser);
       fetchPinnedFiles(storedUser);
@@ -51,7 +51,7 @@ function Dashboard() {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const fileTypes = ['Documents', 'Images', 'Videos', 'Other'];
+    const _FILE_TYPES = ['Documents', 'Images', 'Videos', 'Other'];
     const data = [40, 25, 20, 15]; // Percentages
     const colors = ['#4361ee', '#3a0ca3', '#7209b7', '#f72585'];
     
@@ -79,7 +79,7 @@ function Dashboard() {
       
       // Get all accessible files to calculate stats
       const result = await contract.getAccessibleFiles();
-      const [fileIds, cids, owners, uploaders, timestamps, fileSizes = []] = result;
+      const [fileIds, _cids, owners, uploaders, timestamps, fileSizes = []] = result;
       
       // Calculate statistics
       const userFiles = fileIds.filter((_, index) => 
