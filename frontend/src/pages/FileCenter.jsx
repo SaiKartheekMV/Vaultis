@@ -12,7 +12,7 @@ import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import Table from 'react-bootstrap/Table';
 import Badge from 'react-bootstrap/Badge';
-import UploadForm from '../components/UploadForm';
+import UploadForm from '../components/uploadform';
 import { getContract } from '../services/contract';
 
 function FileCenter() {
