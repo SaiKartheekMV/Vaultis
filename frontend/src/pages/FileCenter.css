@@ -1,0 +1,39 @@
+/* FileCenter.css */
+
+.file-item {
+    transition: background-color 0.2s;
+  }
+  
+  .file-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+  
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .selected-file-info {
+    background-color: rgba(13, 110, 253, 0.05);
+  }
+  
+  /* Custom progress bar styling */
+  .progress {
+    height: 10px;
+    border-radius: 5px;
+  }
+  
+  /* Animation for the upload success indicator */
+  @keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  
+  .upload-success {
+    animation: fadeInOut 2s forwards;
+  }
