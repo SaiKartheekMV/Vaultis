@@ -14,6 +14,7 @@ contract QuantumStorage {
 
     mapping(uint => File) private files;
     uint private fileCounter;
+    mapping(address => address) private backupAddresses;
 
     event FileStored(uint indexed fileId, address indexed uploader, string cid, uint timestamp);
     event AccessGranted(uint indexed fileId, address indexed grantee);
@@ -21,6 +22,7 @@ contract QuantumStorage {
     event OwnershipTransferred(uint indexed fileId, address indexed oldOwner, address indexed newOwner);
     event FileUpdated(uint indexed fileId, string newCID);
     event FileDeleted(uint indexed fileId);
+    event BackupAddressSet(address indexed user, address indexed backupAddress);
 
     modifier onlyOwner(uint fileId) {
         require(files[fileId].owner == msg.sender, "Not the owner");
@@ -167,4 +169,20 @@ contract QuantumStorage {
         delete files[fileId];
         emit FileDeleted(fileId);
     }
+
+    /// @notice Set a backup address for the caller
+    /// @param backupAddress The address to set as backup
+    function setBackupAddress(address backupAddress) external {
+        require(backupAddress != address(0), "Invalid backup address");
+        backupAddresses[msg.sender] = backupAddress;
+        emit BackupAddressSet(msg.sender, backupAddress);
+    }
+
+    /// @notice Get the backup address for the caller
+    /// @return The backup address of the caller
+    function getBackupAddress() external view returns (address) {
+        return backupAddresses[msg.sender];
+    }
 }
+
+
