@@ -1,125 +1,142 @@
-import React, { useState, useEffect } from 'react';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Alert from 'react-bootstrap/Alert';
-import Spinner from 'react-bootstrap/Spinner';
-import Tab from 'react-bootstrap/Tab';
-import Nav from 'react-bootstrap/Nav';
-import Card from 'react-bootstrap/Card';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import Modal from 'react-bootstrap/Modal';
-import Table from 'react-bootstrap/Table';
-import Badge from 'react-bootstrap/Badge';
-import UploadForm from '../components/uploadform';
-import { getContract } from '../services/contract';
+import React, { useState, useEffect } from "react";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Alert from "react-bootstrap/Alert";
+import Spinner from "react-bootstrap/Spinner";
+import Tab from "react-bootstrap/Tab";
+import Nav from "react-bootstrap/Nav";
+import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
+import Modal from "react-bootstrap/Modal";
+import Table from "react-bootstrap/Table";
+import Badge from "react-bootstrap/Badge";
+import UploadForm from "../components/uploadform";
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { getContract } from "../services/contract";
 
 function FileCenter() {
   const [files, setFiles] = useState([]);
-  const [userAddress, setUserAddress] = useState('');
+  const [userAddress, setUserAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deletingFile, setDeletingFile] = useState(null);
-  const [activeTab, setActiveTab] = useState('upload');
+  const [activeTab, setActiveTab] = useState("upload");
   const [selectedFile, setSelectedFile] = useState(null);
   const [showFileDetails, setShowFileDetails] = useState(false);
-  const [fileCid, setFileCid] = useState('');
-  const [downloaderAddress, setDownloaderAddress] = useState('');
+  const [fileCid, setFileCid] = useState("");
+  const [downloaderAddress, setDownloaderAddress] = useState("");
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [showOnlyMyUploads, setShowOnlyMyUploads] = useState(true);
-  const [sharedFilesView, setSharedFilesView] = useState('received'); // 'received' or 'sent'
+  const [sharedFilesView, setSharedFilesView] = useState("received"); // 'received' or 'sent'
 
   // Load user address from localStorage or MetaMask
   useEffect(() => {
     const loadUserAddress = async () => {
       try {
         // Try to get from localStorage first
-        const storedUser = localStorage.getItem('user');
+        const storedUser = localStorage.getItem("user");
         if (storedUser) {
           setUserAddress(storedUser);
           return;
         }
-        
+
         // Otherwise try to get from MetaMask
         if (window.ethereum) {
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
           if (accounts && accounts.length > 0) {
             setUserAddress(accounts[0]);
-            localStorage.setItem('user', accounts[0]);
+            localStorage.setItem("user", accounts[0]);
           }
         }
       } catch (error) {
-        console.error('Failed to load user address:', error);
-        setError('Please connect your wallet to access files.');
+        console.error("Failed to load user address:", error);
+        setError("Please connect your wallet to access files.");
       }
     };
-    
+
     loadUserAddress();
   }, []);
+
+  
+
 
   // Fetch accessible files from the smart contract
   const fetchFiles = async () => {
     if (!userAddress) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const contract = await getContract();
-      
+
       // Get all file data from the getAccessibleFiles function
-      const filesData = await contract.getAccessibleFiles({ from: userAddress });
-      
+      const filesData = await contract.getAccessibleFiles({
+        from: userAddress,
+      });
+
       // The contract returns arrays of values
-      const { 
-        fileIds, 
-        cids, 
-        owners, 
-        uploaders, 
-        timestamps 
-      } = filesData;
-      
+      const { fileIds, cids, owners, uploaders, timestamps } = filesData;
+
       // Transform the returned arrays into an array of file objects
       const formattedFiles = fileIds.map((id, index) => {
         return {
           id: id.toString(),
           cid: cids[index],
           name: `File ${id}`, // We'll update this after getting file info
-          description: 'No description available', // We'll update this after getting file info
+          description: "No description available", // We'll update this after getting file info
           owner: owners[index],
           uploader: uploaders[index],
           timestamp: Number(timestamps[index]),
-          dateFormatted: new Date(Number(timestamps[index]) * 1000).toLocaleString(),
+          dateFormatted: new Date(
+            Number(timestamps[index]) * 1000
+          ).toLocaleString(),
           isOwner: owners[index].toLowerCase() === userAddress.toLowerCase(),
-          isUploader: uploaders[index].toLowerCase() === userAddress.toLowerCase(),
-          isSharedWithMe: owners[index].toLowerCase() !== userAddress.toLowerCase() && uploaders[index].toLowerCase() !== userAddress.toLowerCase(),
-          size: 0 // Default size that will be updated with actual size
+          isUploader:
+            uploaders[index].toLowerCase() === userAddress.toLowerCase(),
+          isSharedWithMe:
+            owners[index].toLowerCase() !== userAddress.toLowerCase() &&
+            uploaders[index].toLowerCase() !== userAddress.toLowerCase(),
+          size: 0, // Default size that will be updated with actual size
         };
       });
-      
+
       // Now fetch additional info for each file
       const filesWithInfo = await Promise.all(
         formattedFiles.map(async (file) => {
           try {
             // Get additional file info
-            const fileInfo = await contract.getFileInfo(file.id, { from: userAddress });
-            
+            const fileInfo = await contract.getFileInfo(file.id, {
+              from: userAddress,
+            });
+
             // Get file metadata including size if available
             let fileSize = 0;
             try {
               // Try to fetch file metadata from IPFS or contract storage
-              const fileMetadata = await contract.getFileMetadata(file.id, { from: userAddress });
+              const fileMetadata = await contract.getFileMetadata(file.id, {
+                from: userAddress,
+              });
               fileSize = Number(fileMetadata.size || 0);
             } catch (metadataError) {
-              console.error(`Error fetching metadata for file ${file.id}:`, metadataError);
+              console.error(
+                `Error fetching metadata for file ${file.id}:`,
+                metadataError
+              );
               // If metadata fetch fails, try to estimate size from CID if possible
               // This is a fallback and may not be accurate
               if (file.cid) {
                 try {
                   // Try to get size info directly from IPFS if available
-                  const ipfsResponse = await fetch(`https://ipfs.io/api/v0/object/stat?arg=${file.cid}`);
+                  const ipfsResponse = await fetch(
+                    `https://ipfs.io/api/v0/object/stat?arg=${file.cid}`
+                  );
                   if (ipfsResponse.ok) {
                     const ipfsData = await ipfsResponse.json();
                     fileSize = ipfsData.CumulativeSize || 1024 * 100; // Default to 100KB if size not available
@@ -129,49 +146,59 @@ function FileCenter() {
                     fileSize = 1024 * (50 + (Number(file.id) % 10) * 25); // Random size between 50KB and 300KB
                   }
                 } catch (ipfsError) {
-                  console.error(`Error estimating size for file ${file.id}:`, ipfsError);
+                  console.error(
+                    `Error estimating size for file ${file.id}:`,
+                    ipfsError
+                  );
                   // Generate a realistic file size based on ID to avoid showing 0KB
                   fileSize = 1024 * (50 + (Number(file.id) % 10) * 25); // Random size between 50KB and 300KB
                 }
               }
             }
-            
+
             // Get access users list to determine if this is a file the user has shared with others
             const accessUsers = fileInfo.accessUsers || [];
-            const hasSharedWithOthers = file.isOwner && accessUsers.length > 0 && accessUsers.some(addr => addr.toLowerCase() !== userAddress.toLowerCase());
-            
+            const hasSharedWithOthers =
+              file.isOwner &&
+              accessUsers.length > 0 &&
+              accessUsers.some(
+                (addr) => addr.toLowerCase() !== userAddress.toLowerCase()
+              );
+
             // Update file with additional info including proper size
             return {
               ...file,
               name: fileInfo.name || `File ${file.id}`,
-              description: fileInfo.description || 'No description available',
+              description: fileInfo.description || "No description available",
               accessUsers: accessUsers,
               size: fileSize,
               hasSharedWithOthers: hasSharedWithOthers,
-              isSharedByMe: hasSharedWithOthers
+              isSharedByMe: hasSharedWithOthers,
             };
           } catch (error) {
             console.error(`Error fetching details for file ${file.id}:`, error);
-            
+
             // Even if we can't get details, assign a realistic file size
             const estimatedSize = 1024 * (50 + (Number(file.id) % 10) * 25); // Random size between 50KB and 300KB
-            
+
             return {
               ...file,
               size: estimatedSize, // Provide a non-zero file size
               accessUsers: [],
               hasSharedWithOthers: false,
-              isSharedByMe: false
+              isSharedByMe: false,
             };
           }
         })
       );
-      
+
       setFiles(filesWithInfo);
       setLoading(false);
     } catch (error) {
-      console.error('❌ Error fetching files:', error);
-      setError('Failed to load files. Please check your wallet connection and try again.');
+      console.error("❌ Error fetching files:", error);
+      setError(
+        "Failed to load files. Please check your wallet connection and try again."
+      );
       setLoading(false);
     }
   };
@@ -179,11 +206,11 @@ function FileCenter() {
   // Format file size for display
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
-    
+
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
@@ -196,47 +223,47 @@ function FileCenter() {
 
   // Handle file upload success - refresh file list
   const handleFileUploaded = () => {
-    setRefreshTrigger(prev => prev + 1);
-    setActiveTab('files'); // Switch to files tab after successful upload
+    setRefreshTrigger((prev) => prev + 1);
+    setActiveTab("files"); // Switch to files tab after successful upload
   };
 
   // Handle file selection for viewing details
   const handleSelectFile = (file) => {
     setSelectedFile(file);
     setShowFileDetails(true);
-    setActiveTab('details');
+    setActiveTab("details");
   };
 
   // Handle closing file details view
   const handleCloseDetails = () => {
     setShowFileDetails(false);
     setSelectedFile(null);
-    setActiveTab('files');
+    setActiveTab("files");
   };
 
   // Handle file deletion
   const handleDeleteFile = async (fileId) => {
     if (!fileId || !userAddress) return;
-    
+
     try {
       setDeletingFile(fileId);
       setError(null);
-      
+
       const contract = await getContract();
       const tx = await contract.deleteFile(fileId, { from: userAddress });
       await tx.wait();
-      
+
       // Refresh file list after deletion
-      setRefreshTrigger(prev => prev + 1);
+      setRefreshTrigger((prev) => prev + 1);
       setDeletingFile(null);
-      
+
       // If we're viewing details of the deleted file, close it
       if (selectedFile && selectedFile.id === fileId) {
         handleCloseDetails();
       }
     } catch (error) {
-      console.error('Error deleting file:', error);
-      setError('Failed to delete file. Please try again.');
+      console.error("Error deleting file:", error);
+      setError("Failed to delete file. Please try again.");
       setDeletingFile(null);
     }
   };
@@ -252,27 +279,31 @@ function FileCenter() {
   const handleGrantAccess = async (e) => {
     e.preventDefault();
     if (!downloaderAddress || !selectedFile || !userAddress) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const contract = await getContract();
-      await contract.grantAccess(selectedFile.id, downloaderAddress, { from: userAddress });
-      
+      await contract.grantAccess(selectedFile.id, downloaderAddress, {
+        from: userAddress,
+      });
+
       // Reset and close modal
-      setDownloaderAddress('');
+      setDownloaderAddress("");
       setShowGrantModal(false);
       setLoading(false);
-      
+
       // Show success message
-      setError({ variant: 'success', message: 'Access granted successfully!' });
-      
+      setError({ variant: "success", message: "Access granted successfully!" });
+
       // Refresh file list
-      setRefreshTrigger(prev => prev + 1);
+      setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error('Error granting access:', error);
-      setError('Failed to grant access. Please check the address and try again.');
+      console.error("Error granting access:", error);
+      setError(
+        "Failed to grant access. Please check the address and try again."
+      );
       setLoading(false);
     }
   };
@@ -280,36 +311,38 @@ function FileCenter() {
   // Handle downloading file
   const handleDownload = async (fileId) => {
     if (!fileId || !userAddress) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const contract = await getContract();
       const cid = await contract.getCID(fileId, { from: userAddress });
-      
+
       // Here you would implement the actual download from IPFS using the CID
       // This is a placeholder
-      window.open(`https://ipfs.io/ipfs/${cid}`, '_blank');
-      
+      window.open(`https://ipfs.io/ipfs/${cid}`, "_blank");
+
       setLoading(false);
     } catch (error) {
-      console.error('Error downloading file:', error);
-      setError('Failed to download file. Please try again.');
+      console.error("Error downloading file:", error);
+      setError("Failed to download file. Please try again.");
       setLoading(false);
     }
   };
 
   // Filter files based on different views
-  const myUploadedFiles = files.filter(file => file.isUploader);
-  const myOwnedFiles = files.filter(file => file.isOwner);
-  const sharedWithMeFiles = files.filter(file => file.isSharedWithMe);
-  const sharedByMeFiles = files.filter(file => file.isSharedByMe);
-  
+  const myUploadedFiles = files.filter((file) => file.isUploader);
+  const myOwnedFiles = files.filter((file) => file.isOwner);
+  const sharedWithMeFiles = files.filter((file) => file.isSharedWithMe);
+  const sharedByMeFiles = files.filter((file) => file.isSharedByMe);
+
   // Get the current filtered files based on active tab and filters
   const getFilteredFiles = () => {
-    if (activeTab === 'shared') {
-      return sharedFilesView === 'received' ? sharedWithMeFiles : sharedByMeFiles;
+    if (activeTab === "shared") {
+      return sharedFilesView === "received"
+        ? sharedWithMeFiles
+        : sharedByMeFiles;
     } else if (showOnlyMyUploads) {
       return myUploadedFiles;
     } else {
@@ -317,20 +350,108 @@ function FileCenter() {
     }
   };
 
+  // Add this function to handle decryption
+ // At the top of your component, add this state
+const [isLoading, setIsLoading] = useState(false);
+
+const handleDecrypt = async (file) => {
+  try {
+    setIsLoading(true);
+    
+    // Get the private key ID from file metadata
+    const privateKeyId = file.private_key_id;
+    
+    if (!privateKeyId) {
+      throw new Error("No private key identifier found for this file");
+    }
+    
+    // First, fetch the private key
+    const privateKeyResponse = await axios.get(`http://localhost:5000/api/private-key`, {
+      params: { key_name: privateKeyId }
+    });
+    
+    if (!privateKeyResponse.data || !privateKeyResponse.data.private_key) {
+      throw new Error("Could not retrieve private key");
+    }
+    
+    const privateKey = privateKeyResponse.data.private_key;
+
+    // Send request to download and decrypt endpoint with blob response type
+    const response = await axios.post(
+      `http://localhost:5000/api/download-decrypt/${file.cid}`,
+      {
+        private_key: privateKey,
+        original_filename: file.name || `decrypted-${file.cid.slice(0, 8)}`
+      },
+      {
+        responseType: 'blob',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Check if we got valid data back
+    if (!response.data || response.data.size === 0) {
+      throw new Error("Received empty file data");
+    }
+
+    // Create a blob URL and trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', file.name || `decrypted-${file.cid.slice(0, 8)}`);
+    
+    // Append link to document, click it, then remove it
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up the URL object after download
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 100);
+
+    toast.success(`Successfully decrypted ${file.name || 'file'}`);
+
+  } catch (error) {
+    console.error('Error decrypting file:', error);
+    let errorMessage = 'Failed to decrypt file';
+
+    if (error.response) {
+      errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage = 'Could not connect to server. Is the backend running?';
+    } else {
+      errorMessage = error.message || 'Unknown error occurred';
+    }
+
+    toast.error(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};  
+
   // Function to truncate Ethereum address for display
   const truncateAddress = (address) => {
-    if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    if (!address) return "";
+    return `${address.substring(0, 6)}...${address.substring(
+      address.length - 4
+    )}`;
   };
 
   // Render file list component
   const renderFileList = () => {
     const filteredFiles = getFilteredFiles();
-    
+
     if (loading) {
       return (
         <div className="text-center p-5">
-          <Spinner animation="border" variant="primary" className="renaissance-spinner" />
+          <Spinner
+            animation="border"
+            variant="primary"
+            className="renaissance-spinner"
+          />
           <p className="mt-2 renaissance-text">Loading your files...</p>
         </div>
       );
@@ -339,16 +460,19 @@ function FileCenter() {
     // Handle no files scenario with appropriate message
     if (filteredFiles.length === 0) {
       let message = "No files found.";
-      if (activeTab === 'shared') {
-        message = sharedFilesView === 'received' 
-          ? "No files have been shared with you yet." 
-          : "You haven't shared any files with others yet.";
+      if (activeTab === "shared") {
+        message =
+          sharedFilesView === "received"
+            ? "No files have been shared with you yet."
+            : "You haven't shared any files with others yet.";
       } else if (showOnlyMyUploads) {
-        message = "You haven't uploaded any files yet. Upload a new file to get started!";
+        message =
+          "You haven't uploaded any files yet. Upload a new file to get started!";
       } else {
-        message = "No accessible files found. Upload a new file to get started!";
+        message =
+          "No accessible files found. Upload a new file to get started!";
       }
-      
+
       return (
         <Alert variant="info" className="mt-3">
           {message}
@@ -361,19 +485,21 @@ function FileCenter() {
         <Card.Header className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center">
             <h4 className="mb-0 me-3">
-              {activeTab === 'shared' ? 
-                (sharedFilesView === 'received' ? '📜 Received Artifacts' : '📤 Shared by Me') : 
-                '🎨 Your DaVinci Vault'}
+              {activeTab === "shared"
+                ? sharedFilesView === "received"
+                  ? "📜 Received Artifacts"
+                  : "📤 Shared by Me"
+                : "🎨 Your DaVinci Vault"}
             </h4>
-            {activeTab === 'shared' ? (
+            {activeTab === "shared" ? (
               <Form.Group className="mb-0 d-flex align-items-center">
                 <Form.Check
                   type="radio"
                   name="sharedFilesView"
                   id="sharedFilesViewReceived"
                   label="Received"
-                  checked={sharedFilesView === 'received'}
-                  onChange={() => setSharedFilesView('received')}
+                  checked={sharedFilesView === "received"}
+                  onChange={() => setSharedFilesView("received")}
                   className="me-3"
                 />
                 <Form.Check
@@ -381,12 +507,12 @@ function FileCenter() {
                   name="sharedFilesView"
                   id="sharedFilesViewSent"
                   label="Shared by me"
-                  checked={sharedFilesView === 'sent'}
-                  onChange={() => setSharedFilesView('sent')}
+                  checked={sharedFilesView === "sent"}
+                  onChange={() => setSharedFilesView("sent")}
                 />
               </Form.Group>
             ) : (
-              <Form.Check 
+              <Form.Check
                 type="switch"
                 id="upload-filter-switch"
                 label="Show only my uploads"
@@ -396,10 +522,10 @@ function FileCenter() {
               />
             )}
           </div>
-          <Button 
-            variant="outline-primary" 
+          <Button
+            variant="outline-primary"
             size="sm"
-            onClick={() => setActiveTab('upload')}
+            onClick={() => setActiveTab("upload")}
             className="renaissance-btn"
           >
             <i className="fas fa-upload me-1"></i> Encode New Artifact
@@ -421,57 +547,74 @@ function FileCenter() {
                 <tr key={file.id} className="align-middle">
                   <td>
                     <div className="d-flex align-items-center">
-                      {activeTab === 'shared' ? 
-                        (sharedFilesView === 'received' ? '🔗' : '📤') : 
-                        '📜'} {file.name || `Codex ${file.id}`}
+                      {activeTab === "shared"
+                        ? sharedFilesView === "received"
+                          ? "🔗"
+                          : "📤"
+                        : "📜"}{" "}
+                      {file.name || `Codex ${file.id}`}
                     </div>
                   </td>
                   <td>{file.dateFormatted}</td>
                   <td>{formatFileSize(file.size)}</td>
                   <td>
                     {file.isUploader && (
-                      <Badge bg="info" className="me-1 renaissance-badge">Encoded by you</Badge>
+                      <Badge bg="info" className="me-1 renaissance-badge">
+                        Encoded by you
+                      </Badge>
                     )}
-                    {file.isOwner && !activeTab === 'shared' && (
-                      <Badge bg="success" className="renaissance-badge">Your Artifact</Badge>
+                    {file.isOwner && !activeTab === "shared" && (
+                      <Badge bg="success" className="renaissance-badge">
+                        Your Artifact
+                      </Badge>
                     )}
                     {file.isSharedWithMe && (
-                      <Badge bg="warning" text="dark" className="renaissance-badge">Shared with you</Badge>
+                      <Badge
+                        bg="warning"
+                        text="dark"
+                        className="renaissance-badge"
+                      >
+                        Shared with you
+                      </Badge>
                     )}
-                    {file.isSharedByMe && activeTab === 'shared' && sharedFilesView === 'sent' && (
-                      <Badge bg="primary" className="renaissance-badge">You shared</Badge>
-                    )}
+                    {file.isSharedByMe &&
+                      activeTab === "shared" &&
+                      sharedFilesView === "sent" && (
+                        <Badge bg="primary" className="renaissance-badge">
+                          You shared
+                        </Badge>
+                      )}
                   </td>
                   <td>
                     <div className="d-flex gap-2">
-                      <Button 
-                        variant="outline-info" 
+                      <Button
+                        variant="outline-info"
                         size="sm"
                         onClick={() => handleSelectFile(file)}
                         className="renaissance-btn-view"
                       >
                         <i className="fas fa-eye me-1"></i> View
                       </Button>
-                      <Button 
-                        variant="outline-primary" 
+                      <Button
+                        variant="outline-primary"
                         size="sm"
-                        onClick={() => handleDownload(file.id)}
-                        className="renaissance-btn-download"
+                        onClick={() => handleDecrypt(file)}
+                        className="renaissance-btn-decrypt"
                       >
                         <i className="fas fa-download me-1"></i> Decrypt
                       </Button>
                       {file.isOwner && (
                         <>
-                          <Button 
-                            variant="outline-success" 
+                          <Button
+                            variant="outline-success"
                             size="sm"
                             onClick={() => handleOpenGrantModal(file)}
                             className="renaissance-btn-share"
                           >
                             <i className="fas fa-share-alt me-1"></i> Share
                           </Button>
-                          <Button 
-                            variant="outline-danger" 
+                          <Button
+                            variant="outline-danger"
                             size="sm"
                             onClick={() => handleDeleteFile(file.id)}
                             disabled={deletingFile === file.id}
@@ -479,7 +622,11 @@ function FileCenter() {
                           >
                             {deletingFile === file.id ? (
                               <Spinner animation="border" size="sm" />
-                            ) : <><i className="fas fa-trash me-1"></i> Delete</>}
+                            ) : (
+                              <>
+                                <i className="fas fa-trash me-1"></i> Delete
+                              </>
+                            )}
                           </Button>
                         </>
                       )}
@@ -507,12 +654,14 @@ function FileCenter() {
       <Card className="renaissance-card">
         <Card.Header className="d-flex justify-content-between">
           <h4 className="mb-0">
-            {selectedFile.isSharedWithMe ? '🔗 Shared Artifact Details' : 
-             selectedFile.isSharedByMe ? '📤 Shared by Me Details' : 
-             '📜 Artifact Codex Details'}
+            {selectedFile.isSharedWithMe
+              ? "🔗 Shared Artifact Details"
+              : selectedFile.isSharedByMe
+              ? "📤 Shared by Me Details"
+              : "📜 Artifact Codex Details"}
           </h4>
-          <Button 
-            variant="outline-secondary" 
+          <Button
+            variant="outline-secondary"
             size="sm"
             onClick={handleCloseDetails}
             className="renaissance-btn-back"
@@ -549,16 +698,28 @@ function FileCenter() {
                     <th>Provenance</th>
                     <td>
                       {selectedFile.isUploader && (
-                        <Badge bg="info" className="me-1 renaissance-badge">Encoded by you</Badge>
+                        <Badge bg="info" className="me-1 renaissance-badge">
+                          Encoded by you
+                        </Badge>
                       )}
                       {selectedFile.isOwner && (
-                        <Badge bg="success" className="me-1 renaissance-badge">Your Artifact</Badge>
+                        <Badge bg="success" className="me-1 renaissance-badge">
+                          Your Artifact
+                        </Badge>
                       )}
                       {selectedFile.isSharedWithMe && (
-                        <Badge bg="warning" text="dark" className="me-1 renaissance-badge">Shared with you</Badge>
+                        <Badge
+                          bg="warning"
+                          text="dark"
+                          className="me-1 renaissance-badge"
+                        >
+                          Shared with you
+                        </Badge>
                       )}
                       {selectedFile.isSharedByMe && (
-                        <Badge bg="primary" className="me-1 renaissance-badge">You shared this</Badge>
+                        <Badge bg="primary" className="me-1 renaissance-badge">
+                          You shared this
+                        </Badge>
                       )}
                     </td>
                   </tr>
@@ -570,45 +731,52 @@ function FileCenter() {
                     </tr>
                   )}
                   {/* Display shared with users if this file was shared by me */}
-                  {selectedFile.isSharedByMe && selectedFile.accessUsers && selectedFile.accessUsers.length > 0 && (
-                    <tr>
-                      <th>Shared With</th>
-                      <td>
-                        {selectedFile.accessUsers.map((user, idx) => (
-                          user.toLowerCase() !== userAddress.toLowerCase() && (
-                            <div key={idx} className="mb-1">
-                              <Badge bg="info" className="renaissance-user-badge">
-                                {truncateAddress(user)}
-                              </Badge>
-                            </div>
-                          )
-                        ))}
-                      </td>
-                    </tr>
-                  )}
+                  {selectedFile.isSharedByMe &&
+                    selectedFile.accessUsers &&
+                    selectedFile.accessUsers.length > 0 && (
+                      <tr>
+                        <th>Shared With</th>
+                        <td>
+                          {selectedFile.accessUsers.map(
+                            (user, idx) =>
+                              user.toLowerCase() !==
+                                userAddress.toLowerCase() && (
+                                <div key={idx} className="mb-1">
+                                  <Badge
+                                    bg="info"
+                                    className="renaissance-user-badge"
+                                  >
+                                    {truncateAddress(user)}
+                                  </Badge>
+                                </div>
+                              )
+                          )}
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </Table>
             </Col>
             <Col md={4}>
               <div className="d-grid gap-3">
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={() => handleDownload(selectedFile.id)}
                   className="renaissance-btn-download-large"
                 >
                   <i className="fas fa-download me-2"></i> Decrypt Artifact
                 </Button>
-                
+
                 {selectedFile.isOwner && (
                   <>
-                    <Button 
-                      variant="success" 
+                    <Button
+                      variant="success"
                       onClick={() => handleOpenGrantModal(selectedFile)}
                       className="renaissance-btn-share-large"
                     >
                       <i className="fas fa-share-alt me-2"></i> Share Artifact
                     </Button>
-                    <Button 
+                    <Button
                       variant="danger"
                       onClick={() => handleDeleteFile(selectedFile.id)}
                       disabled={deletingFile === selectedFile.id}
@@ -616,10 +784,18 @@ function FileCenter() {
                     >
                       {deletingFile === selectedFile.id ? (
                         <>
-                          <Spinner animation="border" size="sm" className="me-2" />
+                          <Spinner
+                            animation="border"
+                            size="sm"
+                            className="me-2"
+                          />
                           Destroying Artifact...
                         </>
-                      ) : <><i className="fas fa-trash me-2"></i> Destroy Artifact</>}
+                      ) : (
+                        <>
+                          <i className="fas fa-trash me-2"></i> Destroy Artifact
+                        </>
+                      )}
                     </Button>
                   </>
                 )}
@@ -634,12 +810,21 @@ function FileCenter() {
   return (
     <Container className="mt-4 renaissance-container">
       <div className="text-center mb-4">
-        <h2 className="renaissance-title">🌐 Quantum Vault • Renaissance Edition</h2>
-        <p className="renaissance-subtitle">Encrypt, store, and share your artifacts with quantum-secure blockchain technology</p>
+        <h2 className="renaissance-title">
+          🌐 Quantum Vault • Renaissance Edition
+        </h2>
+        <p className="renaissance-subtitle">
+          Encrypt, store, and share your artifacts with quantum-secure
+          blockchain technology
+        </p>
       </div>
-      
-      {error && typeof error === 'object' && error.variant ? (
-        <Alert variant={error.variant} dismissible onClose={() => setError(null)}>
+
+      {error && typeof error === "object" && error.variant ? (
+        <Alert
+          variant={error.variant}
+          dismissible
+          onClose={() => setError(null)}
+        >
           {error.message}
         </Alert>
       ) : error ? (
@@ -647,28 +832,35 @@ function FileCenter() {
           {error}
         </Alert>
       ) : null}
-      
+
       {!userAddress ? (
         <Card className="text-center p-5 renaissance-card">
           <Card.Body>
             <h4>Connect Your Quantum Key</h4>
-            <p>Please connect your Ethereum wallet to access your encrypted artifacts.</p>
-            <Button 
-              variant="primary" 
+            <p>
+              Please connect your Ethereum wallet to access your encrypted
+              artifacts.
+            </p>
+            <Button
+              variant="primary"
               onClick={async () => {
                 try {
                   if (window.ethereum) {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await window.ethereum.request({
+                      method: "eth_requestAccounts",
+                    });
                     if (accounts && accounts.length > 0) {
                       setUserAddress(accounts[0]);
-                      localStorage.setItem('user', accounts[0]);
+                      localStorage.setItem("user", accounts[0]);
                     }
                   } else {
-                    setError('No Ethereum wallet detected. Please install MetaMask.');
+                    setError(
+                      "No Ethereum wallet detected. Please install MetaMask."
+                    );
                   }
                 } catch (error) {
-                  console.error('Error connecting wallet:', error);
-                  setError('Failed to connect wallet. Please try again.');
+                  console.error("Error connecting wallet:", error);
+                  setError("Failed to connect wallet. Please try again.");
                 }
               }}
               className="renaissance-btn-connect"
@@ -678,7 +870,11 @@ function FileCenter() {
           </Card.Body>
         </Card>
       ) : (
-        <Tab.Container id="file-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+        <Tab.Container
+          id="file-tabs"
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k)}
+        >
           <Row className="mb-4">
             <Col>
               <Nav variant="tabs" className="renaissance-tabs">
@@ -694,7 +890,8 @@ function FileCenter() {
                 </Nav.Item>
                 <Nav.Item>
                   <Nav.Link eventKey="shared" className="renaissance-tab">
-                    <i className="fas fa-exchange-alt me-1"></i> Shared Artifacts
+                    <i className="fas fa-exchange-alt me-1"></i> Shared
+                    Artifacts
                   </Nav.Link>
                 </Nav.Item>
                 {showFileDetails && (
@@ -707,35 +904,33 @@ function FileCenter() {
               </Nav>
             </Col>
           </Row>
-          
+
           <Row>
             <Col>
               <Tab.Content>
                 <Tab.Pane eventKey="upload">
-                  <UploadForm 
-                    userAddress={userAddress} 
+                  <UploadForm
+                    userAddress={userAddress}
                     onFileUploaded={handleFileUploaded}
                   />
                 </Tab.Pane>
-                <Tab.Pane eventKey="files">
-                  {renderFileList()}
-                </Tab.Pane>
-                <Tab.Pane eventKey="shared">
-                  {renderSharedFiles()}
-                </Tab.Pane>
+                <Tab.Pane eventKey="files">{renderFileList()}</Tab.Pane>
+                <Tab.Pane eventKey="shared">{renderSharedFiles()}</Tab.Pane>
                 {showFileDetails && (
-                  <Tab.Pane eventKey="details">
-                    {renderFileDetails()}
-                  </Tab.Pane>
+                  <Tab.Pane eventKey="details">{renderFileDetails()}</Tab.Pane>
                 )}
               </Tab.Content>
             </Col>
           </Row>
         </Tab.Container>
       )}
-      
+
       {/* Grant Access Modal */}
-      <Modal show={showGrantModal} onHide={() => setShowGrantModal(false)} className="renaissance-modal">
+      <Modal
+        show={showGrantModal}
+        onHide={() => setShowGrantModal(false)}
+        className="renaissance-modal"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Share Quantum Artifact</Modal.Title>
         </Modal.Header>
@@ -743,38 +938,56 @@ function FileCenter() {
           <Form onSubmit={handleGrantAccess}>
             <Form.Group className="mb-3">
               <Form.Label>Selected Artifact</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={selectedFile ? (selectedFile.name || `Codex ${selectedFile.id}`) : ''} 
-                disabled 
+              <Form.Control
+                type="text"
+                value={
+                  selectedFile
+                    ? selectedFile.name || `Codex ${selectedFile.id}`
+                    : ""
+                }
+                disabled
                 className="renaissance-input"
               />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Recipient Quantum Key</Form.Label>
-              <Form.Control 
-                type="text" 
-                placeholder="0x..." 
+              <Form.Control
+                type="text"
+                placeholder="0x..."
                 value={downloaderAddress}
                 onChange={(e) => setDownloaderAddress(e.target.value)}
                 required
                 className="renaissance-input"
               />
               <Form.Text className="text-muted">
-                Enter the Ethereum address of the scholar you wish to share this artifact with
+                Enter the Ethereum address of the scholar you wish to share this
+                artifact with
               </Form.Text>
             </Form.Group>
             <div className="d-flex justify-content-end">
-              <Button variant="secondary" className="me-2 renaissance-btn-cancel" onClick={() => setShowGrantModal(false)}>
+              <Button
+                variant="secondary"
+                className="me-2 renaissance-btn-cancel"
+                onClick={() => setShowGrantModal(false)}
+              >
                 <i className="fas fa-times me-1"></i> Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={loading} className="renaissance-btn-submit">
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={loading}
+                className="renaissance-btn-submit"
+              >
                 {loading ? (
                   <>
                     <Spinner animation="border" size="sm" className="me-2" />
                     Encoding Access...
                   </>
-                ) : <><i className="fas fa-share-alt me-1"></i> Share Artifact</>}
+                ) : (
+                  <>
+                    <i className="fas fa-share-alt me-1"></i> Share Artifact
+                  </>
+                )}
               </Button>
             </div>
           </Form>
