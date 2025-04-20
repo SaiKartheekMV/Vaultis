@@ -9,6 +9,7 @@ import FileCenter from './pages/FileCenter'; // Renamed component for consolidat
 import Wallet from './pages/Wallet';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import QuantumFileDownloader from './pages/DownloadCenter';
 import './App.css';
 
 // Placeholder component for Download
@@ -98,6 +99,13 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/download-center" element={
+          <ProtectedRoute>
+            <Layout>
+              <QuantumFileDownloader />
+            </Layout>
+          </ProtectedRoute>
+        } />
         {/* File Operations Routes */}
         
 

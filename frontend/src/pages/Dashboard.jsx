@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getContract } from '../services/contract';
+import './Dashboard.css'; // Assuming you have a CSS file for styles
 
 function Dashboard() {
   // Removed unused userAddress state
@@ -43,6 +44,14 @@ function Dashboard() {
     if (canvasRef.current) {
       drawStorageChart();
     }
+
+    // Add dark theme to body
+    document.body.classList.add('bg-dark');
+    document.body.style.color = '#e0e0ff';
+
+    return () => {
+      document.body.classList.remove('bg-dark');
+    };
   }, []);
   
   // Draw simple chart for storage usage
@@ -53,7 +62,7 @@ function Dashboard() {
     const ctx = canvas.getContext('2d');
     const _FILE_TYPES = ['Documents', 'Images', 'Videos', 'Other'];
     const data = [40, 25, 20, 15]; // Percentages
-    const colors = ['#4361ee', '#3a0ca3', '#7209b7', '#f72585'];
+    const colors = ['#ff2a6d', '#05d9e8', '#01012b', '#d300c5'];
     
     let startAngle = 0;
     const total = data.reduce((acc, val) => acc + val, 0);
@@ -251,74 +260,155 @@ function Dashboard() {
   );
 
   return (
-    <div className="container py-4">
+    <div className="container py-4" style={{ background: '#010b19' }}>
       <div className="text-center mb-4">
-        <h2 className="text-info">🔐 Welcome to Vaultis</h2>
-        <p className="lead">Decentralized Quantum-Secure Storage using IPFS + Blockchain + PQC</p>
+        <h2 className="text-danger" style={{ 
+          fontFamily: 'Georgia, serif', 
+          textShadow: '0 0 10px #ff2a6d, 0 0 20px #ff2a6d', 
+          letterSpacing: '2px'
+        }}>
+          🔐 VAULTIS <span className="fs-5" style={{ fontFamily: 'serif', fontStyle: 'italic' }}>Codex Securitas</span>
+        </h2>
+        <p className="lead" style={{ color: '#05d9e8', fontFamily: 'serif' }}>
+          Decentralized Quantum-Secure Storage using IPFS + Blockchain + PQC
+          <span className="d-block mt-1" style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>
+            "In the manner of Da Vinci, securing the future with the wisdom of the past"
+          </span>
+        </p>
       </div>
 
       {/* Stats Cards */}
       <div className="row mb-4">
         <div className="col-md-4">
-          <div className="card shadow-sm h-100 text-center">
+          <div className="card shadow h-100 text-center" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 10px rgba(5, 217, 232, 0.5)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h3 className="text-primary">{loading ? "..." : stats.totalFiles}</h3>
-              <p className="mb-0">Total Files</p>
+              <h3 className="text-danger" style={{ textShadow: '0 0 5px #ff2a6d' }}>
+                {loading ? "..." : stats.totalFiles}
+              </h3>
+              <p className="mb-0" style={{ color: '#05d9e8' }}>Total Files</p>
+              <div className="mt-2">
+                <svg height="20" width="100">
+                  <line x1="0" y1="10" x2="100" y2="10" style={{ stroke: '#05d9e8', strokeWidth: 1, strokeDasharray: '5,5', opacity: 0.5 }} />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card shadow-sm h-100 text-center">
+          <div className="card shadow h-100 text-center" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 10px rgba(5, 217, 232, 0.5)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h3 className="text-success">{loading ? "..." : stats.sharedFiles}</h3>
-              <p className="mb-0">Shared Files</p>
+              <h3 className="text-danger" style={{ textShadow: '0 0 5px #ff2a6d' }}>
+                {loading ? "..." : stats.sharedFiles}
+              </h3>
+              <p className="mb-0" style={{ color: '#05d9e8' }}>Shared Files</p>
+              <div className="mt-2">
+                <svg height="20" width="100">
+                  <line x1="0" y1="10" x2="100" y2="10" style={{ stroke: '#05d9e8', strokeWidth: 1, strokeDasharray: '5,5', opacity: 0.5 }} />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card shadow-sm h-100 text-center">
+          <div className="card shadow h-100 text-center" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 10px rgba(5, 217, 232, 0.5)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h3 className="text-info">{loading ? "..." : formatDate(stats.lastActivity).split(' ')[0]}</h3>
-              <p className="mb-0">Last Activity</p>
+              <h3 className="text-danger" style={{ textShadow: '0 0 5px #ff2a6d' }}>
+                {loading ? "..." : formatDate(stats.lastActivity).split(' ')[0]}
+              </h3>
+              <p className="mb-0" style={{ color: '#05d9e8' }}>Last Activity</p>
+              <div className="mt-2">
+                <svg height="20" width="100">
+                  <line x1="0" y1="10" x2="100" y2="10" style={{ stroke: '#05d9e8', strokeWidth: 1, strokeDasharray: '5,5', opacity: 0.5 }} />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
       {/* Search and File Management */}
-      <div className="card shadow-sm mb-4">
+      <div className="card shadow mb-4" style={{ 
+        background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+        border: '1px solid #05d9e8',
+        boxShadow: '0 0 15px rgba(5, 217, 232, 0.3)',
+        borderRadius: '10px'
+      }}>
         <div className="card-body">
-          <h4 className="card-title">🔍 File Search & Management</h4>
-          <div className="input-group mb-3">
+          <h4 className="card-title" style={{ 
+            color: '#ff2a6d', 
+            fontFamily: 'Georgia, serif',
+            borderBottom: '1px solid rgba(5, 217, 232, 0.3)',
+            paddingBottom: '10px'
+          }}>
+            🔍 File Search & Management <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>Archivum Digitalis</span>
+          </h4>
+          <div className="input-group mb-3" style={{ borderRadius: '5px', overflow: 'hidden' }}>
             <input 
               type="text" 
               className="form-control" 
               placeholder="Search files by name or ID..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ 
+                background: '#02071a', 
+                color: '#e0e0ff', 
+                border: '1px solid #05d9e8'
+              }}
             />
-            <button className="btn btn-outline-secondary" type="button">Search</button>
+            <button 
+              className="btn" 
+              type="button"
+              style={{ 
+                background: '#ff2a6d', 
+                color: '#e0e0ff',
+                borderColor: '#ff2a6d'
+              }}
+            >
+              Search
+            </button>
           </div>
           
           <div className="table-responsive">
-            <table className="table table-hover">
+            <table className="table" style={{ color: '#e0e0ff' }}>
               <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Size</th>
-                  <th>Uploaded</th>
-                  <th>Integrity</th>
-                  <th>Actions</th>
+                <tr style={{ borderBottom: '2px solid #05d9e8' }}>
+                  <th style={{ color: '#05d9e8' }}>Name</th>
+                  <th style={{ color: '#05d9e8' }}>Size</th>
+                  <th style={{ color: '#05d9e8' }}>Uploaded</th>
+                  <th style={{ color: '#05d9e8' }}>Integrity</th>
+                  <th style={{ color: '#05d9e8' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredFiles.slice(0, 5).map(file => (
-                  <tr key={file.id}>
+                  <tr key={file.id} style={{ borderBottom: '1px solid rgba(5, 217, 232, 0.2)' }}>
                     <td>{file.name}</td>
                     <td>{formatFileSize(file.size)}</td>
                     <td>{new Date(file.timestamp * 1000).toLocaleDateString()}</td>
                     <td>
-                      <span className={`badge ${integrityResults[file.id] ? 'bg-success' : 'bg-danger'}`}>
+                      <span className={`badge ${integrityResults[file.id] ? 'bg-success' : 'bg-danger'}`}
+                        style={{ 
+                          background: integrityResults[file.id] ? '#05d9e8' : '#ff2a6d',
+                          textShadow: integrityResults[file.id] ? '0 0 5px #05d9e8' : '0 0 5px #ff2a6d',
+                          padding: '5px 10px',
+                          borderRadius: '12px'
+                        }}
+                      >
                         {integrityResults[file.id] ? 'Verified' : 'Failed'}
                       </span>
                     </td>
@@ -326,20 +416,37 @@ function Dashboard() {
                       <div className="btn-group btn-group-sm">
                         {file.preview && (
                           <button 
-                            className="btn btn-outline-primary" 
+                            className="btn"
+                            style={{ 
+                              background: '#01012b', 
+                              color: '#05d9e8',
+                              border: '1px solid #05d9e8',
+                              marginRight: '2px'
+                            }}
                             onClick={() => previewFile(file)}
                           >
                             Preview
                           </button>
                         )}
                         <button 
-                          className="btn btn-outline-info"
+                          className="btn"
+                          style={{ 
+                            background: '#01012b', 
+                            color: '#05d9e8',
+                            border: '1px solid #05d9e8',
+                            marginRight: '2px'
+                          }}
                           onClick={() => verifyFileIntegrity(file.id)}
                         >
                           Verify
                         </button>
                         <button 
-                          className={`btn ${pinnedFiles.some(f => f.id === file.id) ? 'btn-warning' : 'btn-outline-warning'}`}
+                          className="btn"
+                          style={{ 
+                            background: pinnedFiles.some(f => f.id === file.id) ? '#ff2a6d' : '#01012b',
+                            color: pinnedFiles.some(f => f.id === file.id) ? '#fff' : '#ff2a6d',
+                            border: '1px solid #ff2a6d',
+                          }}
                           onClick={() => togglePinFile(file)}
                         >
                           {pinnedFiles.some(f => f.id === file.id) ? 'Unpin' : 'Pin'}
@@ -358,7 +465,18 @@ function Dashboard() {
           </div>
           {filteredFiles.length > 5 && (
             <div className="text-center mt-2">
-              <button className="btn btn-outline-secondary btn-sm">Show More Files</button>
+              <button 
+                className="btn btn-sm"
+                style={{ 
+                  background: 'transparent', 
+                  color: '#05d9e8',
+                  border: '1px solid #05d9e8',
+                  borderRadius: '15px',
+                  padding: '5px 15px'
+                }}
+              >
+                Show More Files
+              </button>
             </div>
           )}
         </div>
@@ -368,23 +486,40 @@ function Dashboard() {
       <div className="row mb-4">
         {/* File Type Distribution */}
         <div className="col-md-6">
-          <div className="card shadow-sm h-100">
+          <div className="card shadow h-100" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 15px rgba(5, 217, 232, 0.3)',
+            borderRadius: '10px',
+            overflow: 'hidden'
+          }}>
             <div className="card-body">
-              <h4 className="card-title">📊 File Analytics</h4>
-              <h6 className="card-subtitle mb-3 text-muted">Distribution by Size</h6>
+              <h4 className="card-title" style={{ 
+                color: '#ff2a6d', 
+                fontFamily: 'Georgia, serif',
+                borderBottom: '1px solid rgba(5, 217, 232, 0.3)',
+                paddingBottom: '10px'
+              }}>
+                📊 File Analytics <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>Proportio Aurea</span>
+              </h4>
+              <h6 className="card-subtitle mb-3" style={{ color: '#9fa8da', fontStyle: 'italic' }}>Distribution by Size</h6>
               
               <div className="file-size-chart">
                 {fileSizeData.map((item, index) => (
-                  <div key={index} className="mb-2">
+                  <div key={index} className="mb-3">
                     <div className="d-flex justify-content-between mb-1">
-                      <span>{item.size}</span>
-                      <span>{item.count} files</span>
+                      <span style={{ color: '#e0e0ff' }}>{item.size}</span>
+                      <span style={{ color: '#05d9e8' }}>{item.count} files</span>
                     </div>
-                    <div className="progress">
+                    <div className="progress" style={{ height: '8px', backgroundColor: 'rgba(1, 1, 43, 0.5)' }}>
                       <div 
                         className="progress-bar" 
                         role="progressbar" 
-                        style={{ width: `${(item.count / fileSizeData.reduce((acc, val) => acc + val.count, 0)) * 100}%` }}
+                        style={{ 
+                          width: `${(item.count / fileSizeData.reduce((acc, val) => acc + val.count, 0)) * 100}%`,
+                          background: 'linear-gradient(90deg, #ff2a6d, #05d9e8)',
+                          boxShadow: '0 0 10px rgba(255, 42, 109, 0.5)'
+                        }}
                         aria-valuenow={item.count} 
                         aria-valuemin="0" 
                         aria-valuemax={fileSizeData.reduce((acc, val) => acc + val.count, 0)}
@@ -394,12 +529,22 @@ function Dashboard() {
                 ))}
               </div>
               
-              <h6 className="card-subtitle mt-4 mb-3 text-muted">File Type Distribution</h6>
+              <h6 className="card-subtitle mt-4 mb-3" style={{ color: '#9fa8da', fontStyle: 'italic' }}>File Type Distribution</h6>
               <div className="file-type-stats d-flex justify-content-around">
-                {Object.entries(fileTypes).map(([type, count]) => (
-                  <div key={type} className="text-center">
-                    <div className="display-6">{count}</div>
-                    <div className="text-muted">.{type}</div>
+                {Object.entries(fileTypes).map(([type, count], index) => (
+                  <div key={type} className="text-center" style={{ 
+                    padding: '10px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(1, 1, 43, 0.7)',
+                    border: '1px solid rgba(5, 217, 232, 0.3)'
+                  }}>
+                    <div className="display-6" style={{ 
+                      color: ['#ff2a6d', '#05d9e8', '#D300C5', '#7B68EE'][index % 4],
+                      textShadow: `0 0 5px ${['#ff2a6d', '#05d9e8', '#D300C5', '#7B68EE'][index % 4]}`
+                    }}>
+                      {count}
+                    </div>
+                    <div style={{ color: '#9fa8da' }}>.{type}</div>
                   </div>
                 ))}
               </div>
@@ -409,28 +554,59 @@ function Dashboard() {
         
         {/* Storage Usage */}
         <div className="col-md-6">
-          <div className="card shadow-sm h-100">
+          <div className="card shadow h-100" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 15px rgba(5, 217, 232, 0.3)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h4 className="card-title">💾 Storage Usage</h4>
+              <h4 className="card-title" style={{ 
+                color: '#ff2a6d', 
+                fontFamily: 'Georgia, serif',
+                borderBottom: '1px solid rgba(5, 217, 232, 0.3)',
+                paddingBottom: '10px'
+              }}>
+                💾 Storage Usage <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>Spatium Digitalis</span>
+              </h4>
               <div className="text-center mb-3">
-                <div className="display-5">{formatFileSize(storageStats.used)}</div>
-                <div className="text-muted">Total Storage Used</div>
+                <div className="display-5" style={{ color: '#ff2a6d', textShadow: '0 0 5px #ff2a6d' }}>
+                  {formatFileSize(storageStats.used)}
+                </div>
+                <div style={{ color: '#9fa8da', fontStyle: 'italic' }}>Total Storage Used</div>
               </div>
               
               <div className="storage-chart-container text-center mb-4">
-                <canvas ref={canvasRef} width="150" height="150"></canvas>
+                <canvas ref={canvasRef} width="150" height="150" style={{ 
+                  border: '2px solid rgba(5, 217, 232, 0.3)',
+                  borderRadius: '50%',
+                  padding: '5px',
+                  background: 'rgba(1, 1, 43, 0.5)'
+                }}></canvas>
+                <div style={{ position: 'relative', marginTop: '-85px', pointerEvents: 'none' }}>
+                  <div style={{ 
+                    fontFamily: 'serif', 
+                    fontStyle: 'italic', 
+                    color: '#9fa8da', 
+                    fontSize: '0.8rem' 
+                  }}>Quantum Storage</div>
+                </div>
               </div>
               
-              <div className="storage-type-breakdown">
+              <div className="storage-type-breakdown" style={{ marginTop: '70px' }}>
                 <div className="d-flex justify-content-between mb-1">
-                  <span>Documents</span>
-                  <span>{formatFileSize(storageStats.byType.documents)}</span>
+                  <span style={{ fontFamily: 'serif', color: '#e0e0ff' }}>Documents</span>
+                  <span style={{ color: '#05d9e8' }}>{formatFileSize(storageStats.byType.documents)}</span>
                 </div>
-                <div className="progress mb-2">
+                <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(1, 1, 43, 0.5)' }}>
                   <div 
-                    className="progress-bar bg-primary" 
+                    className="progress-bar" 
                     role="progressbar" 
-                    style={{ width: '40%' }}
+                    style={{ 
+                      width: '40%',
+                      background: '#ff2a6d',
+                      boxShadow: '0 0 10px rgba(255, 42, 109, 0.5)'
+                    }}
                     aria-valuenow="40"
                     aria-valuemin="0" 
                     aria-valuemax="100"
@@ -438,14 +614,18 @@ function Dashboard() {
                 </div>
                 
                 <div className="d-flex justify-content-between mb-1">
-                  <span>Images</span>
-                  <span>{formatFileSize(storageStats.byType.images)}</span>
+                  <span style={{ fontFamily: 'serif', color: '#e0e0ff' }}>Images</span>
+                  <span style={{ color: '#05d9e8' }}>{formatFileSize(storageStats.byType.images)}</span>
                 </div>
-                <div className="progress mb-2">
+                <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(1, 1, 43, 0.5)' }}>
                   <div 
-                    className="progress-bar bg-success" 
+                    className="progress-bar" 
                     role="progressbar" 
-                    style={{ width: '30%' }}
+                    style={{ 
+                      width: '30%',
+                      background: '#05d9e8',
+                      boxShadow: '0 0 10px rgba(5, 217, 232, 0.5)'
+                    }}
                     aria-valuenow="30"
                     aria-valuemin="0" 
                     aria-valuemax="100"
@@ -453,29 +633,35 @@ function Dashboard() {
                 </div>
                 
                 <div className="d-flex justify-content-between mb-1">
-                  <span>Videos</span>
-                  <span>{formatFileSize(storageStats.byType.videos)}</span>
+                  <span style={{ fontFamily: 'serif', color: '#e0e0ff' }}>Videos</span>
+                  <span style={{ color: '#05d9e8' }}>{formatFileSize(storageStats.byType.videos)}</span>
                 </div>
-                <div className="progress mb-2">
+                <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(1, 1, 43, 0.5)' }}>
                   <div 
-                    className="progress-bar bg-warning" 
+                    className="progress-bar" 
                     role="progressbar" 
-                    style={{ width: '20%' }}
+                    style={{ 
+                      width: '20%',
+                      background: '#D300C5',
+                      boxShadow: '0 0 10px rgba(211, 0, 197, 0.5)'
+                    }}
                     aria-valuenow="20"
                     aria-valuemin="0" 
                     aria-valuemax="100"
                   ></div>
+                </div><div className="d-flex justify-content-between mb-1">
+                  <span style={{ fontFamily: 'serif', color: '#e0e0ff' }}>Other</span>
+                  <span style={{ color: '#05d9e8' }}>{formatFileSize(storageStats.byType.other)}</span>
                 </div>
-                
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Other</span>
-                  <span>{formatFileSize(storageStats.byType.other)}</span>
-                </div>
-                <div className="progress">
+                <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(1, 1, 43, 0.5)' }}>
                   <div 
-                    className="progress-bar bg-info" 
+                    className="progress-bar" 
                     role="progressbar" 
-                    style={{ width: '10%' }}
+                    style={{ 
+                      width: '10%',
+                      background: '#7B68EE',
+                      boxShadow: '0 0 10px rgba(123, 104, 238, 0.5)'
+                    }}
                     aria-valuenow="10"
                     aria-valuemin="0" 
                     aria-valuemax="100"
@@ -487,56 +673,82 @@ function Dashboard() {
         </div>
       </div>
       
-      {/* Pinned Files and Notifications Row */}
+      {/* Pinned Files and Notifications */}
       <div className="row mb-4">
         {/* Pinned Files */}
-        <div className="col-md-7">
-          <div className="card shadow-sm h-100">
+        <div className="col-md-6 mb-4 mb-md-0">
+          <div className="card shadow h-100" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 15px rgba(5, 217, 232, 0.3)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h4 className="card-title">📌 Favorites/Pinned Files</h4>
+              <h4 className="card-title" style={{ 
+                color: '#ff2a6d', 
+                fontFamily: 'Georgia, serif',
+                borderBottom: '1px solid rgba(5, 217, 232, 0.3)',
+                paddingBottom: '10px'
+              }}>
+                📌 Pinned Files <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>Summum Prioritas</span>
+              </h4>
               
-              {pinnedFiles.length === 0 ? (
-                <div className="text-center py-4 text-muted">
-                  <p>No pinned files yet. Pin important files for quick access.</p>
-                </div>
-              ) : (
-                <div className="row">
+              {pinnedFiles.length > 0 ? (
+                <div className="pinned-files-list">
                   {pinnedFiles.map(file => (
-                    <div key={file.id} className="col-md-4 mb-3">
-                      <div className="card h-100">
-                        <div className="card-body p-3">
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <h6 className="card-title mb-0 text-truncate">{file.name}</h6>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => togglePinFile(file)}
-                            >
-                              Unpin
-                            </button>
-                          </div>
-                          <p className="card-text text-muted small mb-0">
-                            Size: {formatFileSize(file.size)}
-                          </p>
-                          <p className="card-text text-muted small">
-                            Uploaded: {new Date(file.timestamp * 1000).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="card-footer p-2 d-flex justify-content-between">
-                          {file.preview && (
-                            <button 
-                              className="btn btn-sm btn-outline-primary" 
-                              onClick={() => previewFile(file)}
-                            >
-                              Preview
-                            </button>
-                          )}
-                          <button className="btn btn-sm btn-outline-secondary">
-                            Download
-                          </button>
+                    <div key={file.id} className="pinned-file-item d-flex align-items-center mb-3 p-2" style={{
+                      background: 'rgba(1, 1, 43, 0.7)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(5, 217, 232, 0.2)'
+                    }}>
+                      <div className="file-icon me-3" style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: 'rgba(5, 217, 232, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.2rem',
+                        color: '#05d9e8',
+                        border: '1px solid rgba(5, 217, 232, 0.3)'
+                      }}>
+                        {file.type === 'pdf' && '📄'}
+                        {file.type === 'jpg' && '🖼️'}
+                        {file.type === 'doc' && '📝'}
+                        {file.type === 'txt' && '📝'}
+                        {!['pdf', 'jpg', 'doc', 'txt'].includes(file.type) && '📁'}
+                      </div>
+                      <div className="file-details flex-grow-1">
+                        <div className="file-name" style={{ color: '#e0e0ff' }}>{file.name}</div>
+                        <div className="file-meta" style={{ fontSize: '0.8rem', color: '#9fa8da' }}>
+                          {formatFileSize(file.size)} • Last accessed: {file.lastAccessed.toLocaleDateString()}
                         </div>
                       </div>
+                      <button 
+                        className="btn btn-sm"
+                        style={{ 
+                          background: 'transparent', 
+                          color: '#ff2a6d',
+                          border: '1px solid #ff2a6d',
+                          borderRadius: '50%',
+                          width: '30px',
+                          height: '30px',
+                          padding: '0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        onClick={() => togglePinFile(file)}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="text-center py-4" style={{ color: '#9fa8da', fontStyle: 'italic' }}>
+                  No files pinned yet. Pin important files for quick access.
                 </div>
               )}
             </div>
@@ -544,111 +756,80 @@ function Dashboard() {
         </div>
         
         {/* Notifications */}
-        <div className="col-md-5">
-          <div className="card shadow-sm h-100">
+        <div className="col-md-6">
+          <div className="card shadow h-100" style={{ 
+            background: 'linear-gradient(135deg, #01012b 0%, #001f3f 100%)',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 15px rgba(5, 217, 232, 0.3)',
+            borderRadius: '10px'
+          }}>
             <div className="card-body">
-              <h4 className="card-title">🔔 Notifications</h4>
+              <h4 className="card-title" style={{ 
+                color: '#ff2a6d', 
+                fontFamily: 'Georgia, serif',
+                borderBottom: '1px solid rgba(5, 217, 232, 0.3)',
+                paddingBottom: '10px'
+              }}>
+                🔔 Notifications <span style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#9fa8da' }}>Notum Facere</span>
+              </h4>
               
-              <ul className="list-group">
-                {notifications.length === 0 ? (
-                  <li className="list-group-item text-center py-3">
-                    No new notifications
-                  </li>
-                ) : (
-                  notifications.map(notification => (
-                    <li 
+              {notifications.length > 0 ? (
+                <div className="notifications-list">
+                  {notifications.map(notification => (
+                    <div 
                       key={notification.id} 
-                      className={`list-group-item d-flex justify-content-between align-items-start ${!notification.read ? 'bg-light' : ''}`}
+                      className={`notification-item d-flex align-items-center mb-3 p-2 ${notification.read ? '' : 'unread'}`}
+                      style={{
+                        background: notification.read ? 'rgba(1, 1, 43, 0.7)' : 'rgba(5, 217, 232, 0.1)',
+                        borderRadius: '8px',
+                        border: notification.read ? '1px solid rgba(5, 217, 232, 0.2)' : '1px solid rgba(5, 217, 232, 0.5)'
+                      }}
+                      onClick={() => markNotificationRead(notification.id)}
                     >
-                      <div className="ms-2 me-auto">
-                        <div className="d-flex align-items-center">
-                          {!notification.read && (
-                            <span className="badge bg-primary rounded-pill me-2"></span>
-                          )}
-                          <div>
-                            <div className="fw-bold">
-                              {notification.type === 'share' && '🔄 Share'}
-                              {notification.type === 'integrity' && '🛡️ Integrity'}
-                              {notification.type === 'system' && '⚙️ System'}
-                            </div>
-                            {notification.message}
-                          </div>
-                        </div>
-                        <small className="text-muted">
-                          {new Date(notification.timestamp).toLocaleString()}
-                        </small>
+                      <div className="notification-icon me-3" style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: 'rgba(5, 217, 232, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.2rem',
+                        color: notification.type === 'share' ? '#ff2a6d' : '#05d9e8',
+                        border: '1px solid rgba(5, 217, 232, 0.3)'
+                      }}>
+                        {notification.type === 'share' && '🔄'}
+                        {notification.type === 'integrity' && '🔐'}
+                        {notification.type === 'system' && '⚙️'}
                       </div>
-                      
+                      <div className="notification-details flex-grow-1">
+                        <div className="notification-message" style={{ 
+                          color: notification.read ? '#e0e0ff' : '#05d9e8',
+                          fontWeight: notification.read ? 'normal' : 'bold'
+                        }}>
+                          {notification.message}
+                        </div>
+                        <div className="notification-time" style={{ fontSize: '0.8rem', color: '#9fa8da' }}>
+                          {new Date(notification.timestamp).toLocaleString()}
+                        </div>
+                      </div>
                       {!notification.read && (
-                        <button 
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => markNotificationRead(notification.id)}
-                        >
-                          Mark Read
-                        </button>
+                        <div className="notification-badge" style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: '#ff2a6d',
+                          boxShadow: '0 0 5px rgba(255, 42, 109, 0.7)'
+                        }}></div>
                       )}
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* File Integrity Status */}
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <h4 className="card-title">🛡️ File Integrity Verification</h4>
-          <p className="card-text text-muted">
-            Verify cryptographic integrity of your files with quantum-resistant signatures
-          </p>
-          
-          <div className="row">
-            <div className="col-md-8">
-              <div className="progress mb-3" style={{ height: '25px' }}>
-                <div 
-                  className="progress-bar bg-success" 
-                  role="progressbar" 
-                  style={{ width: `${Object.values(integrityResults).filter(Boolean).length / Object.values(integrityResults).length * 100}%` }}
-                  aria-valuenow={Object.values(integrityResults).filter(Boolean).length} 
-                  aria-valuemin="0" 
-                  aria-valuemax={Object.values(integrityResults).length}
-                >
-                  {Object.values(integrityResults).filter(Boolean).length} / {Object.values(integrityResults).length} Files Verified
+                    </div>
+                  ))}
                 </div>
-              </div>
-              
-              <div className="d-flex   gap-4 mb-3">
-                <div>
-                  <div className="h4 mb-0 text-success">{Object.values(integrityResults).filter(Boolean).length}</div>
-                  <div className="text-muted">Verified</div>
+              ) : (
+                <div className="text-center py-4" style={{ color: '#9fa8da', fontStyle: 'italic' }}>
+                  No new notifications
                 </div>
-                <div>
-                  <div className="h4 mb-0 text-danger">{Object.values(integrityResults).filter(res => !res).length}</div>
-                  <div className="text-muted">Failed</div>
-                </div>
-                <div>
-                  <div className="h4 mb-0 text-primary">{Object.values(integrityResults).length}</div>
-                  <div className="text-muted">Total Files</div>
-                </div>
-              </div>
-              
-              <button className="btn btn-primary">
-                Verify All Files
-              </button>
-            </div>
-            
-            <div className="col-md-4">
-              <div className="card bg-light">
-                <div className="card-body">
-                  <h6 className="card-title">How It Works</h6>
-                  <p className="card-text small">
-                    Vaultis uses post-quantum cryptographic (PQC) signatures to ensure file integrity. 
-                    Each file is signed when uploaded, and can be verified later to detect tampering.
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -656,46 +837,138 @@ function Dashboard() {
       
       {/* File Preview Modal */}
       {showPreviewer && selectedFile && (
-        <div className="modal" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{selectedFile.name}</h5>
-                <button type="button" className="btn-close" onClick={closePreview}></button>
-              </div>
-              <div className="modal-body">
-                {selectedFile.type === 'jpg' ? (
-                  <div className="text-center">
-                    <div className="bg-light p-5 text-muted">
-                      [Image Preview Placeholder]
-                    </div>
+        <div className="file-preview-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(1, 1, 43, 0.9)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div className="file-preview-container" style={{
+            width: '80%',
+            maxWidth: '800px',
+            background: '#010b19',
+            borderRadius: '10px',
+            border: '1px solid #05d9e8',
+            boxShadow: '0 0 20px rgba(5, 217, 232, 0.5)',
+            padding: '20px',
+            position: 'relative'
+          }}>
+            <div className="preview-header d-flex justify-content-between align-items-center mb-3">
+              <h5 style={{ color: '#ff2a6d', margin: 0 }}>{selectedFile.name}</h5>
+              <button 
+                className="btn-close"
+                style={{ 
+                  background: 'transparent', 
+                  color: '#05d9e8',
+                  border: '1px solid #05d9e8',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.2rem'
+                }}
+                onClick={closePreview}
+              >
+                ×
+              </button>
+            </div>
+            <div className="preview-content text-center p-4">
+              {selectedFile.type === 'jpg' ? (
+                <div className="image-preview" style={{
+                  background: 'rgba(1, 1, 43, 0.7)',
+                  border: '1px solid rgba(5, 217, 232, 0.3)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  minHeight: '300px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{ color: '#9fa8da', fontStyle: 'italic' }}>
+                    [Image Preview Placeholder]
                   </div>
-                ) : selectedFile.type === 'pdf' ? (
-                  <div className="text-center">
-                    <div className="bg-light p-5 text-muted">
-                      [PDF Preview Placeholder]
-                    </div>
-                  </div>
-                ) : (
-                  <div className="alert alert-info">
-                    Preview not available for this file type.
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <div className="text-start me-auto">
-                  <div><strong>File ID:</strong> {selectedFile.id}</div>
-                  <div><strong>Size:</strong> {formatFileSize(selectedFile.size)}</div>
-                  <div className="small text-muted">Last accessed: {selectedFile.lastAccessed.toLocaleString()}</div>
                 </div>
-                <button type="button" className="btn btn-secondary" onClick={closePreview}>Close</button>
-                <button type="button" className="btn btn-primary">Download</button>
+              ) : selectedFile.type === 'pdf' ? (
+                <div className="pdf-preview" style={{
+                  background: 'rgba(1, 1, 43, 0.7)',
+                  border: '1px solid rgba(5, 217, 232, 0.3)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  minHeight: '300px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{ color: '#9fa8da', fontStyle: 'italic' }}>
+                    [PDF Preview Placeholder]
+                  </div>
+                </div>
+              ) : (
+                <div className="file-preview" style={{
+                  background: 'rgba(1, 1, 43, 0.7)',
+                  border: '1px solid rgba(5, 217, 232, 0.3)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  minHeight: '300px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{ color: '#9fa8da', fontStyle: 'italic' }}>
+                    Preview not available for this file type
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="preview-footer d-flex justify-content-between mt-3">
+              <div className="file-details" style={{ color: '#9fa8da', fontSize: '0.9rem' }}>
+                <div>Size: {formatFileSize(selectedFile.size)}</div>
+                <div>Uploaded: {new Date(selectedFile.timestamp * 1000).toLocaleDateString()}</div>
+              </div>
+              <div className="preview-actions">
+                <button 
+                  className="btn btn-sm me-2"
+                  style={{ 
+                    background: '#01012b', 
+                    color: '#05d9e8',
+                    border: '1px solid #05d9e8',
+                  }}
+                >
+                  Download
+                </button>
+                <button 
+                  className="btn btn-sm"
+                  style={{ 
+                    background: '#01012b', 
+                    color: '#ff2a6d',
+                    border: '1px solid #ff2a6d',
+                  }}
+                >
+                  Share
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
       
+      {/* Footer */}
+      <footer className="text-center mt-5" style={{ color: '#9fa8da', borderTop: '1px solid rgba(5, 217, 232, 0.2)', paddingTop: '20px' }}>
+        <p className="mb-0">
+          <span style={{ fontFamily: 'serif', fontStyle: 'italic' }}>VAULTIS Codex Securitas</span> &copy; 2025
+          <span className="mx-2">|</span>
+          <span style={{ fontSize: '0.8rem' }}>"Secure by Design, Private by Default"</span>
+        </p>
+      </footer>
     </div>
   );
 }

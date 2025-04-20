@@ -22,9 +22,10 @@ function Sidebar() {
 
   const menuItems = [
     { path: '/', name: 'Dashboard', icon: '📊' },
-    { path: '/blockchain', name: 'Blockchain Explorer', icon: '🔗' },
+    { path: '/blockchain', name: 'Vaultis Explorer', icon: '🔗' },
     { path: '/wallet', name: 'Crypto Wallet', icon: '💰' },
     { path: '/network', name: 'Node Network', icon: '🌐' },
+    { path: '/download-center', name:'Download center', icon: '⬇️'},
     {
       id: 'file-encryption',
       name: 'File Encryption',
@@ -33,6 +34,7 @@ function Sidebar() {
         { path: '/file-center', name: 'File Center' }
       ]
     },
+    
     { path: '/settings', name: 'Settings', icon: '⚙️' }
   ];
 

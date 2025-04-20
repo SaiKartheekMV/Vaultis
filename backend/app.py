@@ -1,3 +1,4 @@
+import base64
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import os
@@ -106,37 +107,6 @@ def get_from_pinata(cid, output_path):
         print(f"[❌] Error downloading from IPFS: {e}")
         traceback.print_exc()
         return False
-    """
-    Download a file from Pinata IPFS by its CID and save it to output_path
-    Returns True if successful, False otherwise
-    """
-    try:
-        # IPFS gateway URL (could be Pinata's gateway or any public gateway)
-        gateway_url = f"https://gateway.pinata.cloud/ipfs/{cid}"
-        
-        # Alternative public gateways if the above doesn't work
-        # gateway_url = f"https://ipfs.io/ipfs/{cid}"
-        # gateway_url = f"https://cloudflare-ipfs.com/ipfs/{cid}"
-        
-        print(f"[🔍] Fetching from IPFS gateway: {gateway_url}")
-        
-        # Make the request to download the file
-        response = requests.get(gateway_url, stream=True, timeout=30)
-        response.raise_for_status()  # Raise an exception for 4XX/5XX responses
-        
-        # Save the file to the specified output path
-        with open(output_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-        
-        print(f"[✅] Successfully downloaded file to {output_path}")
-        return True
-        
-    except Exception as e:
-        print(f"[❌] Error downloading from IPFS: {e}")
-        traceback.print_exc()  # Print the full error traceback
-        return False
-
 # Helper function for quantum settings
 def get_blockchain_settings():
     """
@@ -259,6 +229,8 @@ def encrypt_and_upload():
             "encrypted_hash": encrypted_hash,
             "original_filename": original_filename,
             "private_key_id": os.path.basename(private_key_path),
+            "private_key": str(private_key),  # Include the actual private key
+            "private_key_warning": "IMPORTANT: Save this private key immediately. It will be deleted from our servers and cannot be recovered.",
             "quantum_enhanced": use_quantum_enhanced,
             "backup_info": backup_info
         }), 200
@@ -277,6 +249,57 @@ def encrypt_and_upload():
 
 @app.route("/api/download/<cid>", methods=["GET"])
 def download_file(cid):
+    """Download an encrypted file directly from IPFS without decryption"""
+    print(f"[🔄] Download request received for CID: {cid}")
+    
+    # Create temp directory if it doesn't exist
+    os.makedirs("temp", exist_ok=True)
+    
+    # Generate temporary file path
+    temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
+    
+    try:
+        print(f"[🔍] Attempting to download file with CID: {cid}")
+        
+        # Download encrypted file from IPFS/Pinata
+        download_success = get_from_pinata(cid, temp_downloaded_path)
+        
+        if not download_success:
+            print("[❌] Failed to download file from IPFS")
+            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
+        
+        print(f"[📥] Downloaded encrypted file to: {temp_downloaded_path}")
+        
+        # Check if file exists and has content
+        if not os.path.exists(temp_downloaded_path):
+            print(f"[❌] File was not found at {temp_downloaded_path}")
+            return jsonify({"error": "Downloaded file not found on server"}), 500
+            
+        if os.path.getsize(temp_downloaded_path) == 0:
+            print(f"[❌] Downloaded file is empty: {temp_downloaded_path}")
+            return jsonify({"error": "Downloaded file is empty"}), 500
+        
+        print(f"[📤] About to send file {temp_downloaded_path} (size: {os.path.getsize(temp_downloaded_path)} bytes)")
+        
+        # Return the file with proper CORS headers
+        response = send_file(
+            temp_downloaded_path,
+            as_attachment=True,
+            download_name=f"file-{cid[:8]}",
+            mimetype="application/octet-stream"
+        )
+        
+        # Add CORS headers explicitly
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        
+        return response
+        
+    except Exception as e:
+        print(f"[❌] Error during file download: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Download failed: {str(e)}"}), 500
     print(f"[🔄] Download request received for CID: {cid}")
     
     # Create temp directory if it doesn't exist
@@ -332,6 +355,47 @@ def download_file(cid):
         # Don't delete the file yet - Flask needs to send it
         # After-request cleanup will handle this
         pass
+
+@app.route("/api/store-key", methods=["POST"])
+def store_encrypted_key():
+    """Store a private key encrypted with a user password"""
+    try:
+        if not request.json or "private_key" not in request.json or "cid" not in request.json:
+            return jsonify({"error": "Private key and CID are required"}), 400
+            
+        private_key = request.json["private_key"]
+        cid = request.json["cid"]
+        password = request.json.get("password", "")  # Optional password
+        
+        # Create a secure directory for key storage
+        key_storage_dir = os.path.join(BASE_DIR, "key_storage")
+        os.makedirs(key_storage_dir, exist_ok=True)
+        
+        # Hash the CID to create a filename
+        filename = hashlib.sha256(cid.encode()).hexdigest()
+        key_path = os.path.join(key_storage_dir, filename)
+        
+        # If password provided, encrypt the private key
+        if password:
+            # Simple encryption - in production, use proper encryption
+            encrypted_key = encrypt_file_with_kyber(private_key, password)
+            with open(key_path, 'w') as f:
+                f.write(encrypted_key)
+        else:
+            with open(key_path, 'w') as f:
+                f.write(private_key)
+                
+        return jsonify({
+            "status": "success",
+            "message": "Private key stored successfully",
+            "requires_password": bool(password)
+        }), 200
+            
+    except Exception as e:
+        print(f"[❌] Error storing private key: {e}")
+        return jsonify({"error": f"Failed to store private key: {str(e)}"}), 500
+
+
 
 @app.route("/api/download-decrypt/<cid>", methods=["POST"])
 def download_and_decrypt(cid):
@@ -431,8 +495,85 @@ def download_and_decrypt(cid):
         pass
 
 
-@app.route('/api/download-decrypt', methods=['POST'])
+@app.route("/api/download-decrypt", methods=["POST"])
 def download_decrypt():
+    """Download and decrypt a file from IPFS using Kyber decryption"""
+    try:
+        data = request.json
+        cid = data.get('cid')
+        private_key = data.get('private_key')
+        original_filename = data.get('original_filename', f"decrypted-{cid[:8]}")
+        
+        if not cid or not private_key:
+            return jsonify({'error': 'CID and private key are required'}), 400
+            
+        # Create temp directory if it doesn't exist
+        os.makedirs("temp", exist_ok=True)
+        
+        # Generate temporary file paths
+        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
+        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
+        
+        print(f"[🔍] Attempting to download file with CID: {cid}")
+        
+        # Download encrypted file from IPFS/Pinata
+        download_success = get_from_pinata(cid, temp_downloaded_path)
+        
+        if not download_success:
+            print("[❌] Failed to download file from IPFS")
+            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
+        
+        print(f"[📥] Downloaded encrypted file to: {temp_downloaded_path}")
+        
+        # Check if file exists and has content
+        if not os.path.exists(temp_downloaded_path):
+            print(f"[❌] File was not found at {temp_downloaded_path}")
+            return jsonify({"error": "Downloaded file not found on server"}), 500
+            
+        if os.path.getsize(temp_downloaded_path) == 0:
+            print(f"[❌] Downloaded file is empty: {temp_downloaded_path}")
+            return jsonify({"error": "Downloaded file is empty"}), 500
+        
+        # Get current security settings
+        settings = get_blockchain_settings()
+        quantum_settings = settings["quantum_protection"]
+        use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
+        
+        print(f"[🔓] Attempting to decrypt file...")
+        
+        # Decrypt the file
+        decryption_success = decrypt_file_with_kyber(
+            input_path=temp_downloaded_path,
+            output_path=temp_decrypted_path,
+            private_key=private_key,
+            use_quantum_enhanced=use_quantum_enhanced
+        )
+        
+        if not decryption_success:
+            print("[❌] Decryption failed")
+            return jsonify({"error": "Failed to decrypt file"}), 500
+        
+        print(f"[✅] Successfully decrypted file to: {temp_decrypted_path}")
+        
+        # Return the decrypted file with proper CORS headers
+        response = send_file(
+            temp_decrypted_path,
+            as_attachment=True,
+            download_name=original_filename,
+            mimetype="application/octet-stream"
+        )
+        
+        # Add CORS headers explicitly
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        
+        return response
+        
+    except Exception as e:
+        print(f"[❌] Error during file download and decryption: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
     try:
         data = request.json
         cid = data.get('cid')
@@ -492,25 +633,9 @@ def download_decrypt():
         return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
 
 
-@app.route('/api/private-key', methods=['GET'])
-def get_private_key():
-    key_name = request.args.get('key_name')
-    if not key_name:
-        return jsonify({'error': 'Key name is required'}), 400
-    
-    # Path to your temp folder where keys are stored
-    key_path = os.path.join('temp', key_name)
-    
-    try:
-        # Read the private key file
-        with open(key_path, 'r') as f:
-            private_key = f.read()
-        
-        return jsonify({'private_key': private_key})
-    except FileNotFoundError:
-        return jsonify({'error': 'Private key not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/private-key/<key_id>', methods=['GET'])
+def get_private_key(key_id):
+    """Retrieve private key by ID."""
     try:
         # Security check to prevent path traversal
         if ".." in key_id or "/" in key_id or "\\" in key_id:
@@ -524,13 +649,18 @@ def get_private_key():
         with open(private_key_path, 'r') as f:
             private_key = f.read()
             
-        return jsonify({"private_key": private_key}), 200
+        return jsonify({
+            "private_key": private_key,
+            "message": "IMPORTANT: Save this private key immediately. It will be deleted from our servers shortly and cannot be recovered."
+        }), 200
         
     except Exception as e:
         print(f"[❌] Error retrieving private key: {e}")
         return jsonify({"error": f"Failed to retrieve private key: {str(e)}"}), 500
-
 # New endpoints for blockchain settings management
+
+
+
 
 @app.route("/api/blockchain/settings", methods=["GET"])
 def get_settings():
@@ -788,6 +918,42 @@ def mock_kyber_decrypt(encrypted_content, private_key):
 # Clean up temp files after response has been sent
 @app.after_request
 def cleanup(response):
+    """Clean up temporary files after responding to the client"""
+    try:
+        temp_dir = "temp"
+        if os.path.exists(temp_dir):
+            current_time = time.time()
+            for filename in os.listdir(temp_dir):
+                filepath = os.path.join(temp_dir, filename)
+                # Check if file is older than 5 minutes (300 seconds)
+                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 300:
+                    try:
+                        os.remove(filepath)
+                        print(f"[🧹] Deleted old temp file: {filepath}")
+                    except Exception as file_error:
+                        print(f"[⚠️] Error deleting {filepath}: {file_error}")
+    except Exception as e:
+        print(f"[⚠️] Cleanup error (non-critical): {e}")
+    
+    return response
+    # Find all temp files older than 15 minutes and delete them
+    try:
+        temp_dir = "temp"
+        if os.path.exists(temp_dir):
+            current_time = time.time()
+            for filename in os.listdir(temp_dir):
+                filepath = os.path.join(temp_dir, filename)
+                # Check if file is older than 15 minutes
+                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 900:  # 15 minutes = 900 seconds
+                    try:
+                        os.remove(filepath)
+                        print(f"[🧹] Deleted old temp file: {filepath}")
+                    except:
+                        pass
+    except Exception as e:
+        print(f"[⚠️] Cleanup error (non-critical): {e}")
+    
+    return response
     # Find all temp files older than 1 minute and delete them
     try:
         temp_dir = "temp"
