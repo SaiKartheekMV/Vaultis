@@ -10,6 +10,7 @@ import Wallet from './pages/Wallet';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import QuantumFileDownloader from './pages/DownloadCenter';
+import FileRecovery from './pages/FileRecovery';
 import './App.css';
 
 // Placeholder component for Download
@@ -125,6 +126,15 @@ function App() {
         <Route path="/file-details" element={
           <Navigate to="/file-center" replace />
         } />
+        <Route path="/file-recovery" element={
+          <ProtectedRoute>
+            <Layout>
+              <FileRecovery />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* Download Route */}
 
         {/* Settings Route */}
         <Route path="/settings" element={

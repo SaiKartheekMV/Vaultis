@@ -9,6 +9,18 @@ import hashlib
 import requests
 import json
 import time
+import random
+import string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import re
+import os
+import time
+import random
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 🔧 Ensure project root is in sys.path
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -23,6 +35,14 @@ from crypto.decryptor import decrypt_file_with_kyber
 app = Flask(__name__)
 # FIX: Enable CORS for all routes without restrictions
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+
+SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+SMTP_SECURE = os.getenv('SMTP_SECURE', 'false').lower() == 'true'
+SMTP_USER = os.getenv('SMTP_USER')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+FROM_EMAIL = os.getenv('FROM_EMAIL', '"Quantum File System" <noreply@quantumfiles.com>')
 
 # Default blockchain settings configuration
 DEFAULT_BLOCKCHAIN_SETTINGS = {
@@ -1498,3 +1518,196 @@ def health_check():
         "timestamp": time.time(),
         "version": "1.0.0"
     }), 200
+
+def get_email_settings():
+    """Get email configuration from environment variables"""
+    return {
+        "smtp_server": os.getenv("SMTP_SERVER", "smtp.gmail.com"),
+        "smtp_port": int(os.getenv("SMTP_PORT", 587)),
+        "smtp_username": os.getenv("SMTP_USERNAME", ""),
+        "smtp_password": os.getenv("SMTP_PASSWORD", ""),  # Use App Password for Gmail
+        "sender_email": os.getenv("SENDER_EMAIL", "your-app@example.com"),
+        "sender_name": os.getenv("SENDER_NAME", "IPFS File Recovery Service")
+    }
+
+# Add this helper function to validate email addresses
+def validate_email(email):
+    """Simple email validation"""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+# Replace your existing send_email_notification function with this implementation
+@app.route("/api/send-email", methods=["POST"])
+def send_email_notification():
+    """Send notification emails for file recovery"""
+    try:
+        if not request.json or "to" not in request.json or "subject" not in request.json or "message" not in request.json:
+            return jsonify({"error": "Email recipient, subject, and message are required"}), 400
+            
+        to_email = request.json["to"]
+        subject = request.json["subject"]
+        message = request.json["message"]
+        html_message = request.json.get("html", "")  # Optional HTML version
+        
+        # Validate email
+        if not validate_email(to_email):
+            return jsonify({"error": "Invalid email address"}), 400
+        
+        print(f"[📧] Sending email notification to: {to_email}")
+        print(f"[📧] Subject: {subject}")
+        
+        # Get email settings
+        settings = get_email_settings()
+        
+        # Check if email settings are configured
+        if not settings["smtp_username"] or not settings["smtp_password"]:
+            print("[⚠️] Email settings not configured. Update your .env file with SMTP credentials.")
+            return jsonify({
+                "success": False,
+                "message": "Email settings not configured. Please configure SMTP settings."
+            }), 500
+        
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['From'] = f"{settings['sender_name']} <{settings['sender_email']}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        # Add plain text version
+        msg.attach(MIMEText(message, 'plain'))
+        
+        # Add HTML version if provided
+        if html_message:
+            msg.attach(MIMEText(html_message, 'html'))
+        
+        # Add file attachment if provided
+        if "attachment" in request.json and "filename" in request.json:
+            attachment_data = request.json["attachment"]
+            filename = request.json["filename"]
+            
+            # For base64 encoded attachments
+            import base64
+            attachment_part = MIMEApplication(
+                base64.b64decode(attachment_data),
+                Name=filename
+            )
+            attachment_part['Content-Disposition'] = f'attachment; filename="{filename}"'
+            msg.attach(attachment_part)
+        
+        # Connect to SMTP server and send
+        try:
+            with smtplib.SMTP(settings["smtp_server"], settings["smtp_port"]) as server:
+                server.starttls()
+                server.login(settings["smtp_username"], settings["smtp_password"])
+                server.send_message(msg)
+                print(f"[✅] Email sent successfully to {to_email}")
+        except Exception as smtp_error:
+            print(f"[❌] SMTP Error: {smtp_error}")
+            return jsonify({
+                "success": False,
+                "error": f"SMTP Error: {str(smtp_error)}"
+            }), 500
+        
+        return jsonify({
+            "success": True,
+            "message": "Email notification sent successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"[❌] Error sending email notification: {e}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Failed to send email: {str(e)}"
+        }), 500
+
+# Add a new route to test email configuration
+@app.route("/api/test-email", methods=["POST"])
+def test_email_configuration():
+    """Test email configuration by sending a test email"""
+    try:
+        if not request.json or "to" not in request.json:
+            return jsonify({"error": "Email recipient is required"}), 400
+            
+        to_email = request.json["to"]
+        
+        # Validate email
+        if not validate_email(to_email):
+            return jsonify({"error": "Invalid email address"}), 400
+        
+        # Get email settings
+        settings = get_email_settings()
+        
+        # Create HTML test message
+        html_message = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; }}
+                .container {{ padding: 20px; }}
+                .header {{ background-color: #4A6CF7; color: white; padding: 20px; text-align: center; }}
+                .content {{ padding: 20px; }}
+                .footer {{ background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Email Configuration Test</h1>
+                </div>
+                <div class="content">
+                    <p>Hello,</p>
+                    <p>This is a test email from your IPFS File Recovery Service.</p>
+                    <p>If you're receiving this email, your email configuration is working correctly!</p>
+                    <p>Server configuration:</p>
+                    <ul>
+                        <li>SMTP Server: {settings["smtp_server"]}</li>
+                        <li>SMTP Port: {settings["smtp_port"]}</li>
+                        <li>Sender: {settings["sender_name"]} ({settings["sender_email"]})</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Create plain text version
+        plain_message = f"""
+        Email Configuration Test
+        
+        Hello,
+        
+        This is a test email from your IPFS File Recovery Service.
+        If you're receiving this email, your email configuration is working correctly!
+        
+        Server configuration:
+        - SMTP Server: {settings["smtp_server"]}
+        - SMTP Port: {settings["smtp_port"]}
+        - Sender: {settings["sender_name"]} ({settings["sender_email"]})
+        
+        This is an automated message. Please do not reply to this email.
+        """
+        
+        # Prepare test email request
+        test_request = {
+            "to": to_email,
+            "subject": "IPFS Recovery Service - Email Configuration Test",
+            "message": plain_message,
+            "html": html_message
+        }
+        
+        # Use the existing send_email_notification function with our test data
+        with app.test_request_context(json=test_request, method="POST"):
+            return send_email_notification()
+        
+    except Exception as e:
+        print(f"[❌] Error testing email configuration: {e}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Failed to test email configuration: {str(e)}"
+        }), 500

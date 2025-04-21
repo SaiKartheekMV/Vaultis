@@ -31,7 +31,8 @@ function Sidebar() {
       name: 'File Encryption',
       icon: '🔐',
       submenu: [
-        { path: '/file-center', name: 'File Center' }
+        { path: '/file-center', name: 'File Center' },
+        { path: '/file-recovery', name: 'File Recovery' }
       ]
     },
     
