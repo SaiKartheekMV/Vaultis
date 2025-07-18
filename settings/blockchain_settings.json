@@ -1,0 +1,30 @@
+{
+    "backup": {
+        "blockchain_backup_address": "",
+        "recovery_email": "",
+        "auto_backup_enabled": false,
+        "backup_address_verified": false
+    },
+    "security": {
+        "profile_level": "Standard",
+        "transaction_signing_method": "Standard",
+        "key_rotation_frequency": "Never",
+        "mfa_enabled": false,
+        "stateful_transaction_firewall": false,
+        "security_notifications": true,
+        "whitelisted_addresses": [],
+        "transaction_timelock": "None",
+        "hash_algorithm": "SHA-256"
+    },
+    "quantum_protection": {
+        "quantum_resistance_mode": "Off",
+        "lattice_based_encryption": false,
+        "qrng_enabled": false,
+        "post_quantum_signature_scheme": "None",
+        "entropy_source": "System",
+        "zero_knowledge_proofs": false,
+        "quantum_entanglement_verification": false,
+        "hash_signature_scheme": "None",
+        "quantum_security_level": 0
+    }
+}

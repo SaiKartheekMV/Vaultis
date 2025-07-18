@@ -7,8 +7,10 @@ function UploadForm({ onUploadSuccess }) {
   const [status, setStatus] = useState('');
   const [cid, setCid] = useState('');
   const [kyberPublicKey, setKyberPublicKey] = useState('');
+  const [kyberPrivateKey, setKyberPrivateKey] = useState(''); // Add state for private key
   const [encryptedHash, setEncryptedHash] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [privateKeyWarning, setPrivateKeyWarning] = useState(''); // Add state for warning message
   const fileInputRef = useRef();
 
   const handleUpload = async (e) => {
@@ -35,10 +37,18 @@ function UploadForm({ onUploadSuccess }) {
       console.log("Public key type:", typeof response.data.kyber_public_key);
       console.log("Public key value:", response.data.kyber_public_key);
 
-      const { cid, kyber_public_key, encrypted_hash } = response.data;
+      const { 
+        cid, 
+        kyber_public_key, 
+        encrypted_hash, 
+        private_key, // Get private key from response
+        private_key_warning // Get warning message
+      } = response.data;
 
       setCid(cid);
       setKyberPublicKey(kyber_public_key);
+      setKyberPrivateKey(private_key); // Store private key in state
+      setPrivateKeyWarning(private_key_warning || "IMPORTANT: Save this private key immediately. It will be deleted from our servers and cannot be recovered."); // Store warning
       setEncryptedHash(encrypted_hash);
       setStatus(`✅ Uploaded to IPFS! CID: ${cid}\n⏳ Saving CID to blockchain...`);
 
@@ -68,6 +78,20 @@ function UploadForm({ onUploadSuccess }) {
     }
   };
 
+  const handleDownloadPrivateKey = () => {
+    // Create a blob with the private key
+    const blob = new Blob([kyberPrivateKey], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link element and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quantum_private_key.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="card border-0 p-0 mb-4 shadow-lg overflow-hidden" style={{
@@ -184,6 +208,71 @@ function UploadForm({ onUploadSuccess }) {
             
             {/* Results Content */}
             <div className="p-3 bg-white">
+              {/* Private Key - New Section */}
+              {kyberPrivateKey && (
+                <div className="mb-3 pb-3" style={{ 
+                  borderBottom: '1px solid rgba(0,0,0,0.05)',
+                }}>
+                  <div className="alert alert-warning border-0 p-2 mb-2" style={{
+                    background: 'rgba(255, 193, 7, 0.1)',
+                    borderLeft: '4px solid #ffc107',
+                  }}>
+                    <div className="d-flex">
+                      <span className="me-2">⚠️</span>
+                      <strong>{privateKeyWarning}</strong>
+                    </div>
+                  </div>
+                  
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="d-flex align-items-center">
+                      <span className="me-2" style={{ 
+                        color: '#dc3545', 
+                        filter: 'drop-shadow(0 0 2px rgba(220, 53, 69, 0.5))'
+                      }}>🔑</span>
+                      <strong className="text-dark">YOUR PRIVATE KEY (REQUIRED FOR DECRYPTION)</strong>
+                    </div>
+                    <div>
+                      <button 
+                        className="btn btn-sm me-2" 
+                        onClick={() => navigator.clipboard.writeText(kyberPrivateKey)}
+                        title="Copy to clipboard"
+                        style={{
+                          background: 'rgba(220, 53, 69, 0.1)',
+                          border: '1px solid rgba(220, 53, 69, 0.3)',
+                          color: '#dc3545',
+                        }}
+                      >
+                        <span className="me-1">📋</span> Copy
+                      </button>
+                      <button 
+                        className="btn btn-sm" 
+                        onClick={handleDownloadPrivateKey}
+                        title="Download private key"
+                        style={{
+                          background: 'rgba(220, 53, 69, 0.1)',
+                          border: '1px solid rgba(220, 53, 69, 0.3)',
+                          color: '#dc3545',
+                        }}
+                      >
+                        <span className="me-1">💾</span> Download
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded" style={{
+                    background: 'rgba(220, 53, 69, 0.03)',
+                    border: '1px solid rgba(220, 53, 69, 0.2)',
+                    wordBreak: 'break-all',
+                    fontFamily: 'monospace',
+                    fontSize: '0.75rem',
+                    color: '#dc3545',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                  }}>
+                    {kyberPrivateKey}
+                  </div>
+                </div>
+              )}
+              
               {/* CID */}
               <div className="mb-3 pb-3" style={{ 
                 borderBottom: '1px solid rgba(0,0,0,0.05)',
