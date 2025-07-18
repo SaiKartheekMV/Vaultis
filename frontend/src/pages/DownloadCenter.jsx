@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
-import { LockOpen, Key, Database, Shield, FileDown } from 'lucide-react';
+import { LockOpen, Key, Database, Shield, FileDown, Settings } from 'lucide-react';
 
 const QuantumFileDownloader = () => {
   const [cid, setCid] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [privateKeyId, setPrivateKeyId] = useState('');
   const [originalFilename, setOriginalFilename] = useState('');
+  const [kyberVariant, setKyberVariant] = useState('auto');
+  const [useParameterizedRoute, setUseParameterizedRoute] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [fetchKeyLoading, setFetchKeyLoading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
 
   // API base URL - replace with your actual backend URL
   const API_BASE_URL = 'http://localhost:5000';
@@ -28,7 +31,6 @@ const QuantumFileDownloader = () => {
       setFetchKeyLoading(true);
       setError('');
       
-      // Fixed: Using privateKeyId instead of keyName
       const response = await axios.get(`${API_BASE_URL}/api/private-key/${privateKeyId}`);
       
       if (response.data && response.data.private_key) {
@@ -46,10 +48,65 @@ const QuantumFileDownloader = () => {
     }
   };
 
+  // Function to validate CID format (basic validation)
+  const isValidCid = (cid) => {
+    // Basic CID validation - should start with Qm or baf and be appropriate length
+    return cid && (
+      (cid.startsWith('Qm') && cid.length === 46) ||
+      (cid.startsWith('baf') && cid.length >= 50) ||
+      (cid.startsWith('zdj') && cid.length >= 50) ||
+      (cid.startsWith('k51') && cid.length >= 50)
+    );
+  };
+
+  // Enhanced error handling function
+  const handleApiError = (err) => {
+    const errorData = err.response?.data;
+    
+    if (errorData && typeof errorData === 'object') {
+      // Handle structured error responses from Flask
+      let errorMessage = errorData.error || 'Unknown error occurred';
+      
+      if (errorData.code) {
+        switch (errorData.code) {
+          case 'INVALID_CID':
+            errorMessage = 'Invalid CID format. Please check your Content Identifier.';
+            break;
+          case 'IPFS_RETRIEVAL_FAILED':
+            errorMessage = 'File not found on IPFS. Please verify the CID is correct.';
+            break;
+          case 'KYBER_DECRYPTION_FAILED':
+            errorMessage = 'Decryption failed. Please check your private key and try again.';
+            break;
+          case 'KYBER_LIBS_MISSING':
+            errorMessage = 'Server configuration error: Quantum cryptography libraries missing.';
+            break;
+          default:
+            errorMessage = errorData.error;
+        }
+      }
+      
+      // Add troubleshooting info if available
+      if (errorData.troubleshooting) {
+        const tips = Object.values(errorData.troubleshooting).join('. ');
+        errorMessage += `\n\nTroubleshooting tips: ${tips}`;
+      }
+      
+      return errorMessage;
+    }
+    
+    return err.response?.data?.error || err.message || 'Network error occurred';
+  };
+
   // Function to download and decrypt file
   const downloadAndDecryptFile = async () => {
     if (!cid) {
       setError('Please enter a CID');
+      return;
+    }
+
+    if (!isValidCid(cid)) {
+      setError('Invalid CID format. Please check your Content Identifier.');
       return;
     }
 
@@ -62,18 +119,46 @@ const QuantumFileDownloader = () => {
       setLoading(true);
       setError('');
       setSuccess('');
+      setDownloadProgress('Initializing download...');
+      
+      let url, requestData;
+      
+      if (useParameterizedRoute) {
+        // Use parameterized route: /api/download-decrypt/<cid>
+        url = `${API_BASE_URL}/api/download-decrypt/${cid}`;
+        requestData = {
+          private_key: privateKey,
+          original_filename: originalFilename || `decrypted-${cid.substring(0, 8)}`
+        };
+      } else {
+        // Use standard route: /api/download-decrypt
+        url = `${API_BASE_URL}/api/download-decrypt`;
+        requestData = {
+          cid: cid,
+          private_key: privateKey,
+          original_filename: originalFilename || `decrypted-${cid.substring(0, 8)}`,
+          kyber_variant: kyberVariant
+        };
+      }
+      
+      setDownloadProgress('Downloading encrypted file from IPFS...');
       
       // Make request to download-decrypt endpoint
       const response = await axios({
-        url: `${API_BASE_URL}/api/download-decrypt`,
+        url: url,
         method: 'POST',
         responseType: 'blob',
-        data: {
-          cid: cid,
-          private_key: privateKey,
-          original_filename: originalFilename || `decrypted-${cid.substring(0, 8)}`
+        data: requestData,
+        timeout: 300000, // 5 minute timeout for large files
+        onDownloadProgress: (progressEvent) => {
+          if (progressEvent.lengthComputable) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setDownloadProgress(`Downloading: ${percentCompleted}%`);
+          }
         }
       });
+      
+      setDownloadProgress('Decrypting file...');
       
       // Create a blob URL and trigger download
       const blob = new Blob([response.data]);
@@ -84,10 +169,31 @@ const QuantumFileDownloader = () => {
       // Save the file using file-saver
       saveAs(blob, filename);
       
-      setSuccess('File successfully downloaded and decrypted!');
+      // Display additional info from headers if available
+      const headers = response.headers;
+      let successMessage = 'File successfully downloaded and decrypted!';
+      
+      if (headers['x-decrypted-size']) {
+        const decryptedSize = parseInt(headers['x-decrypted-size']);
+        const originalSize = parseInt(headers['x-original-size'] || '0');
+        successMessage += `\nDecrypted size: ${(decryptedSize / 1024).toFixed(2)} KB`;
+        if (originalSize > 0) {
+          successMessage += `\nOriginal encrypted size: ${(originalSize / 1024).toFixed(2)} KB`;
+        }
+      }
+      
+      if (headers['x-kyber-variant']) {
+        successMessage += `\nKyber variant used: ${headers['x-kyber-variant']}`;
+      }
+      
+      setSuccess(successMessage);
+      setDownloadProgress('');
+      
     } catch (err) {
       console.error('Error downloading/decrypting file:', err);
-      setError(`Failed to download and decrypt: ${err.response?.data?.error || err.message}`);
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      setDownloadProgress('');
     } finally {
       setLoading(false);
     }
@@ -132,10 +238,11 @@ const QuantumFileDownloader = () => {
                 <Alert variant="danger" className="mb-4" style={{
                   background: 'rgba(220, 53, 69, 0.1)',
                   border: '1px solid rgba(220, 53, 69, 0.3)',
-                  color: '#ff6b81'
+                  color: '#ff6b81',
+                  whiteSpace: 'pre-line'
                 }}>
-                  <div className="d-flex align-items-center">
-                    <div className="me-3">⚠️</div>
+                  <div className="d-flex align-items-start">
+                    <div className="me-3 mt-1">⚠️</div>
                     <div>{error}</div>
                   </div>
                 </Alert>
@@ -145,16 +252,60 @@ const QuantumFileDownloader = () => {
                 <Alert variant="success" className="mb-4" style={{
                   background: 'rgba(40, 167, 69, 0.1)',
                   border: '1px solid rgba(40, 167, 69, 0.3)',
-                  color: '#51cf66'
+                  color: '#51cf66',
+                  whiteSpace: 'pre-line'
                 }}>
-                  <div className="d-flex align-items-center">
-                    <div className="me-3">✅</div>
+                  <div className="d-flex align-items-start">
+                    <div className="me-3 mt-1">✅</div>
                     <div>{success}</div>
                   </div>
                 </Alert>
               )}
 
+              {downloadProgress && (
+                <Alert variant="info" className="mb-4" style={{
+                  background: 'rgba(66, 99, 235, 0.1)',
+                  border: '1px solid rgba(66, 99, 235, 0.3)',
+                  color: '#4263eb'
+                }}>
+                  <div className="d-flex align-items-center">
+                    <Spinner animation="border" size="sm" className="me-3" />
+                    <div>{downloadProgress}</div>
+                  </div>
+                </Alert>
+              )}
+
               <Form>
+                {/* API Route Selection */}
+                <Row className="mb-4">
+                  <Col md={12}>
+                    <Card className="p-3 mb-4" style={{
+                      background: 'rgba(9, 11, 30, 0.6)',
+                      border: '1px solid rgba(102, 126, 234, 0.3)',
+                      borderRadius: '8px'
+                    }}>
+                      <h5 style={{ color: '#667eea' }}>
+                        <Settings className="me-2" />
+                        API Configuration
+                      </h5>
+                      <Form.Check
+                        type="switch"
+                        id="route-switch"
+                        label="Use parameterized route (/api/download-decrypt/<cid>)"
+                        checked={useParameterizedRoute}
+                        onChange={(e) => setUseParameterizedRoute(e.target.checked)}
+                        style={{ color: '#8b9eff' }}
+                      />
+                      <Form.Text style={{ color: '#8b9eff' }}>
+                        {useParameterizedRoute 
+                          ? 'Using route with CID as URL parameter'
+                          : 'Using standard POST route with CID in request body'
+                        }
+                      </Form.Text>
+                    </Card>
+                  </Col>
+                </Row>
+
                 <Row className="mb-4 gx-4">
                   <Col md={12}>
                     <Card className="p-3 mb-4" style={{
@@ -169,9 +320,10 @@ const QuantumFileDownloader = () => {
                       <Form.Group className="mb-0">
                         <Form.Control
                           type="text"
-                          placeholder="Enter the CID of your encrypted file"
+                          placeholder="Enter the CID of your encrypted file (e.g., QmXXXX... or bafXXXX...)"
                           value={cid}
                           onChange={(e) => setCid(e.target.value)}
+                          isInvalid={cid && !isValidCid(cid)}
                           style={{
                             background: 'rgba(13, 17, 23, 0.8)',
                             border: '1px solid #2e3860',
@@ -180,6 +332,9 @@ const QuantumFileDownloader = () => {
                             borderRadius: '6px'
                           }}
                         />
+                        <Form.Control.Feedback type="invalid">
+                          Invalid CID format. CID should start with Qm, baf, zdj, or k51.
+                        </Form.Control.Feedback>
                         <Form.Text style={{ color: '#8b9eff' }}>
                           The Content Identifier (CID) received when you uploaded the file
                         </Form.Text>
@@ -262,7 +417,7 @@ const QuantumFileDownloader = () => {
                 </Row>
 
                 <Row className="mb-4">
-                  <Col md={12}>
+                  <Col md={6}>
                     <Form.Group>
                       <Form.Label style={{ color: '#8b9eff' }}>Original Filename (Optional)</Form.Label>
                       <Form.Control
@@ -282,6 +437,32 @@ const QuantumFileDownloader = () => {
                       </Form.Text>
                     </Form.Group>
                   </Col>
+                  
+                  {!useParameterizedRoute && (
+                    <Col md={6}>
+                      <Form.Group>
+                        <Form.Label style={{ color: '#8b9eff' }}>Kyber Variant</Form.Label>
+                        <Form.Select
+                          value={kyberVariant}
+                          onChange={(e) => setKyberVariant(e.target.value)}
+                          style={{
+                            background: 'rgba(13, 17, 23, 0.8)',
+                            border: '1px solid #2e3860',
+                            color: '#ffffff',
+                            padding: '10px'
+                          }}
+                        >
+                          <option value="auto">Auto-detect</option>
+                          <option value="kyber512">Kyber-512</option>
+                          <option value="kyber768">Kyber-768</option>
+                          <option value="kyber1024">Kyber-1024</option>
+                        </Form.Select>
+                        <Form.Text style={{ color: '#8b9eff' }}>
+                          Kyber algorithm variant (auto-detect recommended)
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  )}
                 </Row>
 
                 <div className="d-grid gap-2">
@@ -289,7 +470,7 @@ const QuantumFileDownloader = () => {
                     variant="primary" 
                     size="lg" 
                     onClick={downloadAndDecryptFile}
-                    disabled={loading || !cid || !privateKey}
+                    disabled={loading || !cid || !isValidCid(cid) || !privateKey}
                     style={{
                       background: 'linear-gradient(135deg, #ff2155, #e6123d)',
                       border: 'none',

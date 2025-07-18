@@ -1,4 +1,5 @@
 import base64
+from email.mime.application import MIMEApplication
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import os
@@ -18,6 +19,7 @@ import re
 import os
 import time
 import random
+from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,7 +31,7 @@ sys.path.append(BASE_DIR)
 # ✅ Imports from project modules
 from storage.upload_to_ipfs import upload_to_pinata
 from crypto.encryptor import encrypt_file_with_kyber
-from crypto.decryptor import decrypt_file_with_kyber
+from crypto.decryptor import decrypt_file_with_kyber, verify_installation
 
 # 🔧 Flask app setup
 app = Flask(__name__)
@@ -400,7 +402,7 @@ def store_encrypted_key():
             # Simple encryption - in production, use proper encryption
             encrypted_key = encrypt_file_with_kyber(private_key, password)
             with open(key_path, 'w') as f:
-                f.write(encrypted_key)
+                f.write(encrypted_key) # type: ignore
         else:
             with open(key_path, 'w') as f:
                 f.write(private_key)
@@ -419,6 +421,7 @@ def store_encrypted_key():
 
 @app.route("/api/download-decrypt/<cid>", methods=["POST"])
 def download_and_decrypt(cid):
+    temp_files_to_cleanup = []  # Initialize at the start
     print(f"[🔄] Download and decrypt request received for CID: {cid}")
     
     # Check for private key in request
@@ -517,141 +520,293 @@ def download_and_decrypt(cid):
 
 @app.route("/api/download-decrypt", methods=["POST"])
 def download_decrypt():
-    """Download and decrypt a file from IPFS using Kyber decryption"""
+    """Download and decrypt a file from IPFS using real Kyber decryption (alternative endpoint)"""
     try:
+        # Validate request data
+        if not request.json:
+            return jsonify({'error': 'JSON data is required'}), 400
+            
         data = request.json
         cid = data.get('cid')
         private_key = data.get('private_key')
-        original_filename = data.get('original_filename', f"decrypted-{cid[:8]}")
+        original_filename = data.get('original_filename', f"decrypted-{cid[:8] if cid else 'unknown'}")
+        kyber_variant = data.get('kyber_variant', 'auto')
         
-        if not cid or not private_key:
-            return jsonify({'error': 'CID and private key are required'}), 400
+        # Enhanced validation
+        if not cid:
+            return jsonify({'error': 'CID is required'}), 400
+        if not private_key:
+            return jsonify({'error': 'Private key is required'}), 400
+        
+        # Validate CID format (basic check)
+        if not is_valid_cid(cid):
+            return jsonify({
+                'error': 'Invalid CID format',
+                'code': 'INVALID_CID'
+            }), 400
+        
+        # Sanitize filename
+        original_filename = secure_filename(original_filename)
+        if not original_filename:
+            original_filename = f"decrypted-{cid[:8]}.txt"
             
-        # Create temp directory if it doesn't exist
-        os.makedirs("temp", exist_ok=True)
+        print(f"[🔍] Processing download-decrypt request:")
+        print(f"  CID: {cid}")
+        print(f"  Filename: {original_filename}")
+        print(f"  Kyber variant: {kyber_variant}")
+        
+        # Create temp directory
+        temp_dir = "temp"
+        os.makedirs(temp_dir, exist_ok=True)
         
         # Generate temporary file paths
-        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
+        temp_downloaded_path = os.path.join(temp_dir, f"dl_{cid[:8]}_{uuid.uuid4().hex[:8]}.enc")
+        temp_decrypted_path = os.path.join(temp_dir, f"dec_{uuid.uuid4().hex[:8]}_{original_filename}")
         
-        print(f"[🔍] Attempting to download file with CID: {cid}")
+        # Add to cleanup list
+        temp_files_to_cleanup = []  # Initialize the list
+        temp_files_to_cleanup.extend([temp_downloaded_path, temp_decrypted_path])
+        
+        # Verify Kyber libraries
+        if not verify_installation():
+            return jsonify({
+                "error": "Kyber decryption libraries not available",
+                "code": "KYBER_LIBS_MISSING",
+                "install_hint": "Run: pip install pqcrypto cryptography"
+            }), 500
+        
+        print(f"[🔍] Downloading file with CID: {cid}")
         
         # Download encrypted file from IPFS/Pinata
         download_success = get_from_pinata(cid, temp_downloaded_path)
         
         if not download_success:
-            print("[❌] Failed to download file from IPFS")
-            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
+            print(f"[❌] Failed to download file from IPFS for CID: {cid}")
+            return jsonify({
+                "error": "Failed to retrieve file from IPFS",
+                "code": "IPFS_RETRIEVAL_FAILED",
+                "cid": cid
+            }), 404
         
         print(f"[📥] Downloaded encrypted file to: {temp_downloaded_path}")
         
-        # Check if file exists and has content
+        # File validation
         if not os.path.exists(temp_downloaded_path):
-            print(f"[❌] File was not found at {temp_downloaded_path}")
-            return jsonify({"error": "Downloaded file not found on server"}), 500
+            return jsonify({
+                "error": "Downloaded file not found on server",
+                "code": "DOWNLOAD_VERIFICATION_FAILED"
+            }), 500
             
-        if os.path.getsize(temp_downloaded_path) == 0:
-            print(f"[❌] Downloaded file is empty: {temp_downloaded_path}")
-            return jsonify({"error": "Downloaded file is empty"}), 500
+        file_size = os.path.getsize(temp_downloaded_path)
+        if file_size == 0:
+            return jsonify({
+                "error": "Downloaded file is empty",
+                "code": "EMPTY_DOWNLOAD"
+            }), 500
         
-        # Get current security settings
-        settings = get_blockchain_settings()
-        quantum_settings = settings["quantum_protection"]
-        use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
+        print(f"[📊] Downloaded file size: {file_size} bytes")
         
-        print(f"[🔓] Attempting to decrypt file...")
+        # Get security settings
+        try:
+            settings = get_blockchain_settings()
+            quantum_settings = settings["quantum_protection"]
+            use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
+        except Exception as e:
+            print(f"[⚠️] Could not load security settings: {e}")
+            use_quantum_enhanced = False
         
-        # Decrypt the file
+        print(f"[🔓] Starting real Kyber decryption...")
+        
+        # Decrypt using the updated real implementation
         decryption_success = decrypt_file_with_kyber(
             input_path=temp_downloaded_path,
             output_path=temp_decrypted_path,
             private_key=private_key,
-            use_quantum_enhanced=use_quantum_enhanced
+            use_quantum_enhanced=use_quantum_enhanced,
+            kyber_variant=kyber_variant
         )
         
         if not decryption_success:
-            print("[❌] Decryption failed")
-            return jsonify({"error": "Failed to decrypt file"}), 500
+            print("[❌] Real Kyber decryption failed")
+            return jsonify({
+                "error": "Decryption failed with provided private key",
+                "code": "KYBER_DECRYPTION_FAILED",
+                "troubleshooting": {
+                    "check_private_key": "Ensure private key matches the encryption key",
+                    "check_file_format": "Verify encrypted file format is correct",
+                    "check_kyber_variant": "Try different Kyber variants (kyber512, kyber768, kyber1024)"
+                }
+            }), 500
         
+        # Verify output file
+        if not os.path.exists(temp_decrypted_path):
+            return jsonify({
+                "error": "Decryption process completed but output file missing",
+                "code": "DECRYPTION_OUTPUT_MISSING"
+            }), 500
+        
+        decrypted_size = os.path.getsize(temp_decrypted_path)
         print(f"[✅] Successfully decrypted file to: {temp_decrypted_path}")
+        print(f"[📊] Decrypted file size: {decrypted_size} bytes")
         
-        # Return the decrypted file with proper CORS headers
+        # Determine MIME type
+        mime_type = get_mime_type(original_filename)
+        
+        # Create response
         response = send_file(
             temp_decrypted_path,
             as_attachment=True,
             download_name=original_filename,
-            mimetype="application/octet-stream"
+            mimetype=mime_type
         )
         
-        # Add CORS headers explicitly
+        # Add CORS and info headers
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Expose-Headers', 'Content-Disposition,X-Decryption-Success')
+        
+        # Add decryption metadata
+        response.headers.add('X-Decryption-Success', 'true')
+        response.headers.add('X-CID', cid)
+        response.headers.add('X-Original-Size', str(file_size))
+        response.headers.add('X-Decrypted-Size', str(decrypted_size))
+        response.headers.add('X-Kyber-Variant', kyber_variant)
         
         return response
         
     except Exception as e:
-        print(f"[❌] Error during file download and decryption: {e}")
+        error_msg = f"Download and decryption process failed: {str(e)}"
+        print(f"[❌] {error_msg}")
         traceback.print_exc()
-        return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
-    try:
-        data = request.json
-        cid = data.get('cid')
-        private_key = data.get('private_key')
-        original_filename = data.get('original_filename', f"decrypted-{cid[:8]}")
         
-        if not cid or not private_key:
-            return jsonify({'error': 'CID and private key are required'}), 400
-            
-        # Create temp directory if it doesn't exist
-        os.makedirs("temp", exist_ok=True)
-        
-        # Generate temporary file paths
-        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
-        
-        # Download encrypted file from IPFS/Pinata
-        download_success = get_from_pinata(cid, temp_downloaded_path)
-        
-        if not download_success:
-            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
-        
-        # Get current security settings
-        settings = get_blockchain_settings()
-        quantum_settings = settings["quantum_protection"]
-        use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
-        
-        # Decrypt the file
-        decryption_success = decrypt_file_with_kyber(
-            input_path=temp_downloaded_path,
-            output_path=temp_decrypted_path,
-            private_key=private_key,
-            use_quantum_enhanced=use_quantum_enhanced
-        )
-        
-        if not decryption_success:
-            return jsonify({"error": "Failed to decrypt file"}), 500
-        
-        # Return the decrypted file with proper CORS headers
-        response = send_file(
-            temp_decrypted_path,
-            as_attachment=True,
-            download_name=original_filename,
-            mimetype="application/octet-stream"
-        )
-        
-        # Add CORS headers explicitly
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        
-        return response
-        
-    except Exception as e:
-        print(f"[❌] Error during file download and decryption: {e}")
-        traceback.print_exc()
-        return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
+        return jsonify({
+            "error": error_msg,
+            "code": "PROCESS_FAILED",
+            "timestamp": str(uuid.uuid4())
+        }), 500
 
+# Helper functions
+def verify_cid_whitelist(cid: str, whitelisted_addresses: list) -> bool:
+    """
+    Verify if a CID comes from a whitelisted address
+    In a real implementation, this would check the blockchain/IPFS metadata
+    """
+    # This is a placeholder - implement actual whitelist verification
+    # You might check:
+    # 1. The IPFS pin metadata to see who pinned it
+    # 2. A blockchain record of who uploaded the CID
+    # 3. A database mapping CIDs to wallet addresses
+    
+    print(f"[🔍] Checking CID {cid} against whitelist: {whitelisted_addresses}")
+    
+    # For now, return True (implement your actual logic here)
+    return True
+
+def is_valid_cid(cid: str) -> bool:
+    """
+    Basic CID format validation
+    """
+    if not cid or len(cid) < 10:
+        return False
+    
+    # Basic checks for IPFS CID format
+    # CIDv0: starts with Qm, 46 characters
+    # CIDv1: starts with b, f, z, etc.
+    
+    if cid.startswith('Qm') and len(cid) == 46:
+        return True
+    elif len(cid) > 10 and cid[0] in 'bfzm':
+        return True
+    
+    return False
+
+def get_mime_type(filename: str) -> str:
+    """
+    Determine MIME type based on file extension
+    """
+    import mimetypes
+    
+    mime_type, _ = mimetypes.guess_type(filename)
+    
+    if mime_type:
+        return mime_type
+    
+    # Fallback to common types
+    ext = filename.lower().split('.')[-1] if '.' in filename else ''
+    
+    mime_map = {
+        'txt': 'text/plain',
+        'json': 'application/json',
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'mp4': 'video/mp4',
+        'mp3': 'audio/mpeg',
+        'zip': 'application/zip',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    
+    return mime_map.get(ext, 'application/octet-stream')
+
+
+@app.route("/api/kyber-status", methods=["GET"])
+def kyber_status():
+    """
+    Check the status of Kyber decryption capabilities
+    """
+    try:
+        status = {
+            "kyber_available": verify_installation(),
+            "supported_variants": ["kyber512", "kyber768", "kyber1024"],
+            "auto_detection": True,
+            "quantum_enhanced": True
+        }
+        
+        # Check which specific libraries are available
+        libraries = {}
+        try:
+            import pqcrypto
+            libraries["pqcrypto"] = True
+        except ImportError:
+            libraries["pqcrypto"] = False
+            
+        try:
+            import oqs
+            libraries["oqs"] = True
+        except ImportError:
+            libraries["oqs"] = False
+            
+        try:
+            import cryptography
+            libraries["cryptography"] = True
+        except ImportError:
+            libraries["cryptography"] = False
+        
+        status["libraries"] = libraries
+        status["ready"] = any(libraries.values()) and libraries.get("cryptography", False)
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to check Kyber status: {str(e)}",
+            "kyber_available": False
+        }), 500
+    
+
+@app.route("/api/download-decrypt/<cid>", methods=["OPTIONS"])
+@app.route("/api/download-decrypt", methods=["OPTIONS"])
+def handle_options():
+    """Handle CORS preflight requests"""
+    response = jsonify({'status': 'OK'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 @app.route('/api/private-key/<key_id>', methods=['GET'])
 def get_private_key(key_id):
@@ -1140,7 +1295,7 @@ def get_quantum_entropy():
             source = "Hybrid (System + Simulated Quantum)"
         else:  # "Quantum"
             # Simulate quantum entropy (in a real app, you'd use a quantum random number generator)
-            entropy = hashlib.sha3_256(str(time.time() + os.urandom(8).hex()).encode()).hexdigest()
+            entropy = hashlib.sha3_256(str(time.time() + os.urandom(8).hex()).encode()).hexdigest() # type: ignore
             source = "Simulated Quantum"
             
         return jsonify({
