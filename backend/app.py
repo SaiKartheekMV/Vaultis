@@ -14,10 +14,12 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 import re
 import os
 import time
 import random
+import mimetypes
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -160,13 +162,15 @@ def encrypt_and_upload():
     uploaded_file = request.files["file"]
     original_filename = uploaded_file.filename
     
-    # 📁 Temp file paths
-    temp_input_path = os.path.join("temp", f"input_{uuid.uuid4().hex}_{original_filename}")
-    temp_encrypted_path = os.path.join("temp", f"encrypted_{uuid.uuid4().hex}_{original_filename}")
+    # 📁 Temp directory (absolute path)
+    temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # 📁 Temp file paths (absolute)
+    temp_input_path = os.path.join(temp_dir, f"input_{uuid.uuid4().hex}_{original_filename}")
+    temp_encrypted_path = os.path.join(temp_dir, f"encrypted_{uuid.uuid4().hex}_{original_filename}")
     
     try:
-        # 📂 Ensure temp directory exists
-        os.makedirs("temp", exist_ok=True)
         
         # 💾 Save uploaded file to temp location
         uploaded_file.save(temp_input_path)
@@ -206,7 +210,7 @@ def encrypt_and_upload():
         print(f"[🔑] Formatted public key for response: {formatted_public_key}")
         
         # Save private key temporarily (in a real app, you would handle this more securely)
-        private_key_path = os.path.join("temp", f"private_key_{uuid.uuid4().hex}")
+        private_key_path = os.path.join(temp_dir, f"private_key_{uuid.uuid4().hex}")
         with open(private_key_path, 'w') as f:
             if isinstance(private_key, bytes):
                 f.write(private_key.decode('utf-8', errors='replace'))
@@ -272,61 +276,12 @@ def download_file(cid):
     """Download an encrypted file directly from IPFS without decryption"""
     print(f"[🔄] Download request received for CID: {cid}")
     
-    # Create temp directory if it doesn't exist
-    os.makedirs("temp", exist_ok=True)
+    # Create temp directory if it doesn't exist (absolute path)
+    temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+    os.makedirs(temp_dir, exist_ok=True)
     
-    # Generate temporary file path
-    temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-    
-    try:
-        print(f"[🔍] Attempting to download file with CID: {cid}")
-        
-        # Download encrypted file from IPFS/Pinata
-        download_success = get_from_pinata(cid, temp_downloaded_path)
-        
-        if not download_success:
-            print("[❌] Failed to download file from IPFS")
-            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
-        
-        print(f"[📥] Downloaded encrypted file to: {temp_downloaded_path}")
-        
-        # Check if file exists and has content
-        if not os.path.exists(temp_downloaded_path):
-            print(f"[❌] File was not found at {temp_downloaded_path}")
-            return jsonify({"error": "Downloaded file not found on server"}), 500
-            
-        if os.path.getsize(temp_downloaded_path) == 0:
-            print(f"[❌] Downloaded file is empty: {temp_downloaded_path}")
-            return jsonify({"error": "Downloaded file is empty"}), 500
-        
-        print(f"[📤] About to send file {temp_downloaded_path} (size: {os.path.getsize(temp_downloaded_path)} bytes)")
-        
-        # Return the file with proper CORS headers
-        response = send_file(
-            temp_downloaded_path,
-            as_attachment=True,
-            download_name=f"file-{cid[:8]}",
-            mimetype="application/octet-stream"
-        )
-        
-        # Add CORS headers explicitly
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        
-        return response
-        
-    except Exception as e:
-        print(f"[❌] Error during file download: {e}")
-        traceback.print_exc()
-        return jsonify({"error": f"Download failed: {str(e)}"}), 500
-    print(f"[🔄] Download request received for CID: {cid}")
-    
-    # Create temp directory if it doesn't exist
-    os.makedirs("temp", exist_ok=True)
-    
-    # Generate temporary file path
-    temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
+    # Generate temporary file path (absolute)
+    temp_downloaded_path = os.path.join(temp_dir, f"downloaded_{uuid.uuid4().hex}")
     
     try:
         print(f"[🔍] Attempting to download file with CID: {cid}")
@@ -370,11 +325,6 @@ def download_file(cid):
         print(f"[❌] Error during file download: {e}")
         traceback.print_exc()
         return jsonify({"error": f"Download failed: {str(e)}"}), 500
-    
-    finally:
-        # Don't delete the file yet - Flask needs to send it
-        # After-request cleanup will handle this
-        pass
 
 @app.route("/api/store-key", methods=["POST"])
 def store_encrypted_key():
@@ -428,12 +378,13 @@ def download_and_decrypt(cid):
     private_key = request.json.get("private_key")
     original_filename = request.json.get("original_filename", f"decrypted-{cid[:8]}")
     
-    # Create temp directory if it doesn't exist
-    os.makedirs("temp", exist_ok=True)
+    # Create temp directory if it doesn't exist (use absolute path)
+    temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+    os.makedirs(temp_dir, exist_ok=True)
     
-    # Generate temporary file paths
-    temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-    temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
+    # Generate temporary file paths (absolute)
+    temp_downloaded_path = os.path.join(temp_dir, f"downloaded_{uuid.uuid4().hex}")
+    temp_decrypted_path = os.path.join(temp_dir, f"decrypted_{uuid.uuid4().hex}_{original_filename}")
     
     try:
         # Get current security settings
@@ -489,18 +440,66 @@ def download_and_decrypt(cid):
             
         print(f"[✅] Successfully decrypted file to: {temp_decrypted_path}")
         
-        # Return the decrypted file with proper CORS headers
+        # Verify file exists before sending
+        if not os.path.exists(temp_decrypted_path):
+            print(f"[❌] Decrypted file not found at {temp_decrypted_path}")
+            return jsonify({"error": "Decrypted file not found on server"}), 500
+        
+        file_size = os.path.getsize(temp_decrypted_path)
+        if file_size == 0:
+            print(f"[❌] Decrypted file is empty: {temp_decrypted_path}")
+            return jsonify({"error": "Decrypted file is empty"}), 500
+        
+        # Verify it's binary by checking first few bytes (for images: JPEG starts with FF D8, PNG with 89 50 4E 47)
+        try:
+            with open(temp_decrypted_path, 'rb') as f:
+                first_bytes = f.read(4)
+                print(f"[🔍] First 4 bytes (hex): {first_bytes.hex()} (decoded: {first_bytes})")
+        except Exception as e:
+            print(f"[⚠️] Could not read file bytes for verification: {e}")
+        
+        # Detect MIME type from filename extension
+        mime_type, _ = mimetypes.guess_type(original_filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+        
+        print(f"[📤] Sending file: {original_filename} with MIME type: {mime_type}")
+        print(f"[📊] File size: {file_size} bytes")
+        
+        # Verify file is actually binary before sending
+        with open(temp_decrypted_path, 'rb') as verify_file:
+            verify_bytes = verify_file.read(10)
+            print(f"[🔍] Verification: First 10 bytes from disk (hex): {verify_bytes.hex()}")
+            if verify_bytes[:2] == b'\xff\xd8':
+                print("[✅] Detected JPEG file signature")
+            elif verify_bytes[:4] == b'\x89PNG':
+                print("[✅] Detected PNG file signature")
+            else:
+                print(f"[⚠️] Unknown file signature: {verify_bytes[:4].hex()}")
+        
+        # Return the decrypted file with proper CORS headers and correct MIME type
+        # CRITICAL: Use mimetype parameter to ensure binary is sent correctly
+        # Flask's send_file with mimetype should handle binary correctly
         response = send_file(
             temp_decrypted_path,
+            mimetype=mime_type,  # This tells Flask to send as binary
             as_attachment=True,
-            download_name=original_filename,
-            mimetype="application/octet-stream"
+            download_name=original_filename
         )
         
-        # Add CORS headers explicitly
+        # Explicitly set headers to ensure binary transmission (DO NOT set Content-Transfer-Encoding)
+        response.headers['Content-Type'] = mime_type
+        response.headers['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+        
+        # Remove any encoding headers that might interfere
+        if 'Content-Transfer-Encoding' in response.headers:
+            del response.headers['Content-Transfer-Encoding']
+        
+        # Add CORS headers explicitly (including exposing Content-Type)
         response.headers.add('Access-Control-Allow-Origin', '*')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Expose-Headers', 'Content-Type,Content-Disposition')
         
         return response
         
@@ -527,12 +526,13 @@ def download_decrypt():
         if not cid or not private_key:
             return jsonify({'error': 'CID and private key are required'}), 400
             
-        # Create temp directory if it doesn't exist
-        os.makedirs("temp", exist_ok=True)
+        # Create temp directory if it doesn't exist (use absolute path)
+        temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+        os.makedirs(temp_dir, exist_ok=True)
         
-        # Generate temporary file paths
-        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
+        # Generate temporary file paths (absolute)
+        temp_downloaded_path = os.path.join(temp_dir, f"downloaded_{uuid.uuid4().hex}")
+        temp_decrypted_path = os.path.join(temp_dir, f"decrypted_{uuid.uuid4().hex}_{original_filename}")
         
         print(f"[🔍] Attempting to download file with CID: {cid}")
         
@@ -575,75 +575,56 @@ def download_decrypt():
         
         print(f"[✅] Successfully decrypted file to: {temp_decrypted_path}")
         
-        # Return the decrypted file with proper CORS headers
+        # Verify file exists before sending
+        if not os.path.exists(temp_decrypted_path):
+            print(f"[❌] Decrypted file not found at {temp_decrypted_path}")
+            return jsonify({"error": "Decrypted file not found on server"}), 500
+        
+        if os.path.getsize(temp_decrypted_path) == 0:
+            print(f"[❌] Decrypted file is empty: {temp_decrypted_path}")
+            return jsonify({"error": "Decrypted file is empty"}), 500
+        
+        # Detect MIME type from filename extension
+        mime_type, _ = mimetypes.guess_type(original_filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+        
+        print(f"[📤] Sending file: {original_filename} with MIME type: {mime_type}")
+        print(f"[📊] File size: {os.path.getsize(temp_decrypted_path)} bytes")
+        
+        # Verify file is actually binary before sending
+        with open(temp_decrypted_path, 'rb') as verify_file:
+            verify_bytes = verify_file.read(10)
+            print(f"[🔍] Verification: First 10 bytes from disk (hex): {verify_bytes.hex()}")
+            if verify_bytes[:2] == b'\xff\xd8':
+                print("[✅] Detected JPEG file signature")
+            elif verify_bytes[:4] == b'\x89PNG':
+                print("[✅] Detected PNG file signature")
+            else:
+                print(f"[⚠️] Unknown file signature: {verify_bytes[:4].hex()}")
+        
+        # Return the decrypted file with proper CORS headers and correct MIME type
+        # CRITICAL: Use mimetype parameter to ensure binary is sent correctly
         response = send_file(
             temp_decrypted_path,
+            mimetype=mime_type,  # This tells Flask to send as binary
             as_attachment=True,
-            download_name=original_filename,
-            mimetype="application/octet-stream"
+            download_name=original_filename
         )
         
-        # Add CORS headers explicitly
+        # Explicitly set headers to ensure binary transmission
+        response.headers['Content-Type'] = mime_type
+        response.headers['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+        
+        # Remove any encoding headers that might interfere
+        if 'Content-Transfer-Encoding' in response.headers:
+            del response.headers['Content-Transfer-Encoding']
+        
+        # Add CORS headers explicitly (including exposing Content-Type)
         response.headers.add('Access-Control-Allow-Origin', '*')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        
-        return response
-        
-    except Exception as e:
-        print(f"[❌] Error during file download and decryption: {e}")
-        traceback.print_exc()
-        return jsonify({"error": f"Download and decryption failed: {str(e)}"}), 500
-    try:
-        data = request.json
-        cid = data.get('cid')
-        private_key = data.get('private_key')
-        original_filename = data.get('original_filename', f"decrypted-{cid[:8]}")
-        
-        if not cid or not private_key:
-            return jsonify({'error': 'CID and private key are required'}), 400
-            
-        # Create temp directory if it doesn't exist
-        os.makedirs("temp", exist_ok=True)
-        
-        # Generate temporary file paths
-        temp_downloaded_path = os.path.join("temp", f"downloaded_{uuid.uuid4().hex}")
-        temp_decrypted_path = os.path.join("temp", f"decrypted_{uuid.uuid4().hex}_{original_filename}")
-        
-        # Download encrypted file from IPFS/Pinata
-        download_success = get_from_pinata(cid, temp_downloaded_path)
-        
-        if not download_success:
-            return jsonify({"error": "Failed to retrieve file from IPFS"}), 404
-        
-        # Get current security settings
-        settings = get_blockchain_settings()
-        quantum_settings = settings["quantum_protection"]
-        use_quantum_enhanced = quantum_settings["quantum_resistance_mode"] != "Off"
-        
-        # Decrypt the file
-        decryption_success = decrypt_file_with_kyber(
-            input_path=temp_downloaded_path,
-            output_path=temp_decrypted_path,
-            private_key=private_key,
-            use_quantum_enhanced=use_quantum_enhanced
-        )
-        
-        if not decryption_success:
-            return jsonify({"error": "Failed to decrypt file"}), 500
-        
-        # Return the decrypted file with proper CORS headers
-        response = send_file(
-            temp_decrypted_path,
-            as_attachment=True,
-            download_name=original_filename,
-            mimetype="application/octet-stream"
-        )
-        
-        # Add CORS headers explicitly
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Expose-Headers', 'Content-Type,Content-Disposition')
         
         return response
         
@@ -661,7 +642,9 @@ def get_private_key(key_id):
         if ".." in key_id or "/" in key_id or "\\" in key_id:
             return jsonify({"error": "Invalid key ID"}), 400
             
-        private_key_path = os.path.join("temp", key_id)
+        # Use absolute path for temp directory
+        temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+        private_key_path = os.path.join(temp_dir, key_id)
         
         if not os.path.exists(private_key_path):
             return jsonify({"error": "Private key not found or expired"}), 404
@@ -940,54 +923,18 @@ def mock_kyber_decrypt(encrypted_content, private_key):
 def cleanup(response):
     """Clean up temporary files after responding to the client"""
     try:
-        temp_dir = "temp"
+        temp_dir = os.path.join(BASE_DIR, "backend", "temp")
         if os.path.exists(temp_dir):
             current_time = time.time()
             for filename in os.listdir(temp_dir):
                 filepath = os.path.join(temp_dir, filename)
-                # Check if file is older than 5 minutes (300 seconds)
-                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 300:
+                # Check if file is older than 15 minutes (900 seconds)
+                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 900:
                     try:
                         os.remove(filepath)
                         print(f"[🧹] Deleted old temp file: {filepath}")
                     except Exception as file_error:
                         print(f"[⚠️] Error deleting {filepath}: {file_error}")
-    except Exception as e:
-        print(f"[⚠️] Cleanup error (non-critical): {e}")
-    
-    return response
-    # Find all temp files older than 15 minutes and delete them
-    try:
-        temp_dir = "temp"
-        if os.path.exists(temp_dir):
-            current_time = time.time()
-            for filename in os.listdir(temp_dir):
-                filepath = os.path.join(temp_dir, filename)
-                # Check if file is older than 15 minutes
-                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 900:  # 15 minutes = 900 seconds
-                    try:
-                        os.remove(filepath)
-                        print(f"[🧹] Deleted old temp file: {filepath}")
-                    except:
-                        pass
-    except Exception as e:
-        print(f"[⚠️] Cleanup error (non-critical): {e}")
-    
-    return response
-    # Find all temp files older than 1 minute and delete them
-    try:
-        temp_dir = "temp"
-        if os.path.exists(temp_dir):
-            current_time = time.time()
-            for filename in os.listdir(temp_dir):
-                filepath = os.path.join(temp_dir, filename)
-                # Check if file is older than 1 minute
-                if os.path.isfile(filepath) and current_time - os.path.getmtime(filepath) > 60:
-                    try:
-                        os.remove(filepath)
-                        print(f"[🧹] Deleted old temp file: {filepath}")
-                    except:
-                        pass
     except Exception as e:
         print(f"[⚠️] Cleanup error (non-critical): {e}")
     
@@ -1011,7 +958,8 @@ if __name__ == "__main__":
         sys.exit(1)
         
     # Create directories if they don't exist
-    os.makedirs("temp", exist_ok=True)
+    temp_dir = os.path.join(BASE_DIR, "backend", "temp")
+    os.makedirs(temp_dir, exist_ok=True)
     os.makedirs(os.path.join(BASE_DIR, "settings"), exist_ok=True)
     
     print("[🚀] Starting Quantum-Secure Blockchain File Server")

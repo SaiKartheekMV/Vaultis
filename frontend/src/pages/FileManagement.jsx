@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './FileList.css';
 import './FileDetails.css';
@@ -65,49 +65,49 @@ function FileManagement({ files = [], onSelect, onDelete, deleting, currentAddre
 
   // ======== FILE DETAILS FUNCTIONS ========
   // Fetch file CID from blockchain when needed
-  const fetchFileCID = async () => {
-    try {
-      if (!contract) {
-        throw new Error("Contract not provided");
+    const fetchFileCID = useCallback(async () => {
+      try {
+        if (!contract) {
+          throw new Error("Contract not provided");
+        }
+        
+        if (!selectedFile || !selectedFile.id) {
+          throw new Error("File ID not provided");
+        }
+        
+        // If we already have the CID from the file prop, use that instead
+        if (selectedFile && selectedFile.cid) {
+          return selectedFile.cid;
+        }
+        
+        // Call the contract's getCID function to get the CID
+        const cid = await contract.methods.getCID(selectedFile.id).call({ from: currentAddress });
+        return cid;
+      } catch (error) {
+        console.error("Error fetching CID:", error);
+        setError("Failed to fetch file CID. You may not have access or the contract connection is not established.");
+        return null;
       }
-      
-      if (!selectedFile || !selectedFile.id) {
-        throw new Error("File ID not provided");
-      }
-      
-      // If we already have the CID from the file prop, use that instead
-      if (selectedFile && selectedFile.cid) {
-        return selectedFile.cid;
-      }
-      
-      // Call the contract's getCID function to get the CID
-      const cid = await contract.methods.getCID(selectedFile.id).call({ from: currentAddress });
-      return cid;
-    } catch (error) {
-      console.error("Error fetching CID:", error);
-      setError("Failed to fetch file CID. You may not have access or the contract connection is not established.");
-      return null;
-    }
-  };
+    }, [contract, selectedFile, currentAddress]);
 
   // Load access list
-  const loadAccessList = async () => {
-    if (!contract || !selectedFile || !selectedFile.id) {
-      return;
-    }
-    
-    setIsLoadingAccess(true);
-    try {
-      // Get file info which includes access users
-      const fileInfo = await contract.methods.getFileInfo(selectedFile.id).call({ from: currentAddress });
-      setAccessList(fileInfo.accessUsers || []);
-    } catch (error) {
-      console.error("Error loading access list:", error);
-      setError("Failed to load access list. Please check your connection.");
-    } finally {
-      setIsLoadingAccess(false);
-    }
-  };
+    const loadAccessList = useCallback(async () => {
+      if (!contract || !selectedFile || !selectedFile.id) {
+        return;
+      }
+      
+      setIsLoadingAccess(true);
+      try {
+        // Get file info which includes access users
+        const fileInfo = await contract.methods.getFileInfo(selectedFile.id).call({ from: currentAddress });
+        setAccessList(fileInfo.accessUsers || []);
+      } catch (error) {
+        console.error("Error loading access list:", error);
+        setError("Failed to load access list. Please check your connection.");
+      } finally {
+        setIsLoadingAccess(false);
+      }
+    }, [contract, selectedFile, currentAddress]);
 
   // Handle file download
   const handleDownload = async () => {
@@ -222,28 +222,28 @@ function FileManagement({ files = [], onSelect, onDelete, deleting, currentAddre
 
   // ======== EFFECTS ========
   // Effect to fetch CID and load access list when a file is selected
-  useEffect(() => {
-    if (selectedFile) {
-      if (selectedFile.cid) {
-        setFileCID(selectedFile.cid);
-      } else if (contract && selectedFile.id && currentAddress) {
-        (async () => {
-          try {
-            const cid = await fetchFileCID();
-            if (cid) {
-              setFileCID(cid);
+    useEffect(() => {
+      if (selectedFile) {
+        if (selectedFile.cid) {
+          setFileCID(selectedFile.cid);
+        } else if (contract && selectedFile.id && currentAddress) {
+          (async () => {
+            try {
+              const cid = await fetchFileCID();
+              if (cid) {
+                setFileCID(cid);
+              }
+            } catch (error) {
+              console.error("Error fetching CID in useEffect:", error);
             }
-          } catch (error) {
-            console.error("Error fetching CID in useEffect:", error);
-          }
-        })();
+          })();
+        }
+        
+        if (selectedFile.id && contract && currentAddress) {
+          loadAccessList();
+        }
       }
-      
-      if (selectedFile.id && contract && currentAddress) {
-        loadAccessList();
-      }
-    }
-  }, [selectedFile, contract, currentAddress]);
+    }, [selectedFile, contract, currentAddress, fetchFileCID, loadAccessList]);
 
   // Check if user is owner of selected file
   const isOwner = 

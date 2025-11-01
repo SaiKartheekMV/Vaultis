@@ -42,7 +42,8 @@ function UploadForm({ onUploadSuccess }) {
         kyber_public_key, 
         encrypted_hash, 
         private_key, // Get private key from response
-        private_key_warning // Get warning message
+        private_key_warning, // Get warning message
+        original_filename // Get original filename
       } = response.data;
 
       setCid(cid);
@@ -50,6 +51,16 @@ function UploadForm({ onUploadSuccess }) {
       setKyberPrivateKey(private_key); // Store private key in state
       setPrivateKeyWarning(private_key_warning || "IMPORTANT: Save this private key immediately. It will be deleted from our servers and cannot be recovered."); // Store warning
       setEncryptedHash(encrypted_hash);
+      // Persist the private key and filename locally keyed by CID for later decryption
+      try { 
+        localStorage.setItem(`pk:${cid}`, private_key);
+        if (original_filename) {
+          localStorage.setItem(`fn:${cid}`, original_filename);
+        }
+      } catch (e) {
+        // Ignore storage errors (e.g., storage disabled or quota exceeded) but log for debugging
+        console.warn('Failed to persist private key/filename to localStorage:', e);
+      }
       setStatus(`✅ Uploaded to IPFS! CID: ${cid}\n⏳ Saving CID to blockchain...`);
 
       // Save CID to blockchain

@@ -52,7 +52,7 @@ function Dashboard() {
     return () => {
       document.body.classList.remove('bg-dark');
     };
-  }, []);
+  }, [fetchPinnedFiles]);
   
   // Draw simple chart for storage usage
   const drawStorageChart = () => {
@@ -185,8 +185,8 @@ function Dashboard() {
     }
   };
   
-  const fetchPinnedFiles = async (address) => {
-    // In a real implementation, this would fetch from blockchain or local storage
+  const fetchPinnedFiles = async () => {
+    // In a real implementation, this would fetch from blockchain or local storage using the address
     // For demo, we'll use random selection from files
     setTimeout(() => {
       const mockPinned = files

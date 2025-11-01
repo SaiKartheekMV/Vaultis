@@ -1,51 +1,57 @@
 import base64
 import hashlib
+import json
+import secrets
+from Crypto.Cipher import AES
 from crypto.pqc import kyber, sphincs, dilithium
 from .file_utils import read_file_as_bytes, save_bytes_to_file
 
 
 def encrypt_file_with_kyber(input_path, output_path):
     """
-    Encrypts a file using Kyber public-key encryption.
+    Hybrid encrypt a file:
+    - Generate random AES-GCM key to encrypt file bytes
+    - "Wrap" AES key using simulated Kyber (string-based) for transport
 
-    Args:
-        input_path (str): Path to the input file.
-        output_path (str): Path to save the encrypted output.
-
-    Returns:
-        tuple: (encrypted_data, public_key, private_key)
+    Output file is JSON with base64 fields. Returns (encrypted_json_str, public_key, private_key).
     """
     try:
-        # 🔐 Step 1: Generate Kyber keys
+        # Generate Kyber keypair (simulated)
         public_key, private_key = kyber.generate_keys()
-        print("[🔑] Kyber keys generated.")
-        
-        # Ensure public key is properly formatted
-        if isinstance(public_key, bytes):
-            public_key_str = base64.b64encode(public_key).decode('utf-8')
-        else:
-            public_key_str = str(public_key)
-        
-        print(f"[🔑] Public key format: {type(public_key_str)}")
-        print(f"[🔑] Public key sample: {public_key_str[:30]}...")
+        public_key_str = public_key if isinstance(public_key, str) else base64.b64encode(public_key).decode('utf-8')
 
-        # 📥 Step 2: Read file and base64 encode its content
-        file_data = read_file_as_bytes(input_path)
-        encoded_data = base64.b64encode(file_data).decode()
-        print(f"[📦] File encoded for encryption. Size: {len(encoded_data)} characters")
+        # Read file bytes
+        plaintext = read_file_as_bytes(input_path)
 
-        # 🔒 Step 3: Encrypt encoded data using Kyber
-        encrypted = kyber.encrypt(encoded_data, public_key_str)
-        print("[🔐] File encrypted successfully.")
+        # AES-GCM
+        aes_key = secrets.token_bytes(32)  # 256-bit key
+        nonce = secrets.token_bytes(12)    # 96-bit nonce recommended for GCM
+        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
+        ciphertext, tag = cipher.encrypt_and_digest(plaintext)
 
-        # 💾 Step 4: Save encrypted data to file
-        save_bytes_to_file(encrypted.encode(), output_path)
+        # Wrap AES key using simulated Kyber (works on strings)
+        aes_key_b64 = base64.b64encode(aes_key).decode('utf-8')
+        encrypted_key = kyber.encrypt(aes_key_b64, public_key_str)
+
+        # Package as JSON (all binary fields base64)
+        envelope = {
+            "version": 1,
+            "scheme": "AES-256-GCM + Kyber(sim)",
+            "nonce": base64.b64encode(nonce).decode('utf-8'),
+            "tag": base64.b64encode(tag).decode('utf-8'),
+            "ciphertext": base64.b64encode(ciphertext).decode('utf-8'),
+            "encrypted_key": encrypted_key,
+        }
+        encrypted_json = json.dumps(envelope, separators=(',', ':'))
+
+        # Save encrypted JSON to disk
+        save_bytes_to_file(encrypted_json.encode('utf-8'), output_path)
         print(f"[✔] Encrypted file saved to: {output_path}")
 
-        return encrypted, public_key_str, private_key
+        return encrypted_json, public_key_str, private_key
 
     except Exception as e:
-        print(f"[❌] Kyber encryption failed: {e}")
+        print(f"[❌] Encryption failed: {e}")
         return None, None, None
 
 

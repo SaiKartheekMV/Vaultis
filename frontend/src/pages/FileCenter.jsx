@@ -27,11 +27,16 @@ function FileCenter() {
   const [activeTab, setActiveTab] = useState("upload");
   const [selectedFile, setSelectedFile] = useState(null);
   const [showFileDetails, setShowFileDetails] = useState(false);
-  const [fileCid, setFileCid] = useState("");
   const [downloaderAddress, setDownloaderAddress] = useState("");
   const [showGrantModal, setShowGrantModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadCid, setDownloadCid] = useState("");
+  const [downloadPrivateKey, setDownloadPrivateKey] = useState("");
+  const [downloadFilename, setDownloadFilename] = useState("");
+  const [fileToDownload, setFileToDownload] = useState(null);
   const [showOnlyMyUploads, setShowOnlyMyUploads] = useState(true);
   const [sharedFilesView, setSharedFilesView] = useState("received"); // 'received' or 'sent'
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load user address from localStorage or MetaMask
   useEffect(() => {
@@ -107,7 +112,7 @@ function FileCenter() {
         };
       });
 
-      // Now fetch additional info for each file
+      // Now fetch additional info for each file (avoid non-existent contract methods)
       const filesWithInfo = await Promise.all(
         formattedFiles.map(async (file) => {
           try {
@@ -116,45 +121,8 @@ function FileCenter() {
               from: userAddress,
             });
 
-            // Get file metadata including size if available
-            let fileSize = 0;
-            try {
-              // Try to fetch file metadata from IPFS or contract storage
-              const fileMetadata = await contract.getFileMetadata(file.id, {
-                from: userAddress,
-              });
-              fileSize = Number(fileMetadata.size || 0);
-            } catch (metadataError) {
-              console.error(
-                `Error fetching metadata for file ${file.id}:`,
-                metadataError
-              );
-              // If metadata fetch fails, try to estimate size from CID if possible
-              // This is a fallback and may not be accurate
-              if (file.cid) {
-                try {
-                  // Try to get size info directly from IPFS if available
-                  const ipfsResponse = await fetch(
-                    `https://ipfs.io/api/v0/object/stat?arg=${file.cid}`
-                  );
-                  if (ipfsResponse.ok) {
-                    const ipfsData = await ipfsResponse.json();
-                    fileSize = ipfsData.CumulativeSize || 1024 * 100; // Default to 100KB if size not available
-                  } else {
-                    // If can't get from IPFS, assign a default size based on file ID for demonstration
-                    // In a real app, you would want to store this properly during upload
-                    fileSize = 1024 * (50 + (Number(file.id) % 10) * 25); // Random size between 50KB and 300KB
-                  }
-                } catch (ipfsError) {
-                  console.error(
-                    `Error estimating size for file ${file.id}:`,
-                    ipfsError
-                  );
-                  // Generate a realistic file size based on ID to avoid showing 0KB
-                  fileSize = 1024 * (50 + (Number(file.id) % 10) * 25); // Random size between 50KB and 300KB
-                }
-              }
-            }
+            // Size is not on-chain; estimate (avoid IPFS CORS calls)
+            const fileSize = 1024 * (50 + (Number(file.id) % 10) * 25);
 
             // Get access users list to determine if this is a file the user has shared with others
             const accessUsers = fileInfo.accessUsers || [];
@@ -270,7 +238,6 @@ function FileCenter() {
 
   // Handle opening grant access modal
   const handleOpenGrantModal = (file) => {
-    setFileCid(file.cid);
     setSelectedFile(file);
     setShowGrantModal(true);
   };
@@ -308,28 +275,7 @@ function FileCenter() {
     }
   };
 
-  // Handle downloading file
-  const handleDownload = async (fileId) => {
-    if (!fileId || !userAddress) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const contract = await getContract();
-      const cid = await contract.getCID(fileId, { from: userAddress });
-
-      // Here you would implement the actual download from IPFS using the CID
-      // This is a placeholder
-      window.open(`https://ipfs.io/ipfs/${cid}`, "_blank");
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      setError("Failed to download file. Please try again.");
-      setLoading(false);
-    }
-  };
+  // (Removed unused handleDownload function)
 
   // Filter files based on different views
   const myUploadedFiles = files.filter((file) => file.isUploader);
@@ -350,87 +296,201 @@ function FileCenter() {
     }
   };
 
-  // Add this function to handle decryption
- // At the top of your component, add this state
-const [isLoading, setIsLoading] = useState(false);
-
-const handleDecrypt = async (file) => {
-  try {
-    setIsLoading(true);
+  // Handle opening download/decrypt modal
+  const handleOpenDownloadModal = (file) => {
+    setFileToDownload(file);
     
-    // Get the private key ID from file metadata
-    const privateKeyId = file.private_key_id;
+    // Try to get CID and private key from localStorage
+    let storedCid = file.cid || "";
+    let storedPrivateKey = "";
+    let storedFilename = "";
     
-    if (!privateKeyId) {
-      throw new Error("No private key identifier found for this file");
+    try {
+      if (storedCid) {
+        storedPrivateKey = localStorage.getItem(`pk:${storedCid}`) || "";
+        storedFilename = localStorage.getItem(`fn:${storedCid}`) || "";
+      }
+    } catch {
+      // Intentionally ignored: failure to access localStorage is non-critical
     }
     
-    // First, fetch the private key
-    const privateKeyResponse = await axios.get(`http://localhost:5000/api/private-key`, {
-      params: { key_name: privateKeyId }
-    });
-    
-    if (!privateKeyResponse.data || !privateKeyResponse.data.private_key) {
-      throw new Error("Could not retrieve private key");
-    }
-    
-    const privateKey = privateKeyResponse.data.private_key;
+    // Set the form values
+    setDownloadCid(storedCid);
+    setDownloadPrivateKey(storedPrivateKey);
+    setDownloadFilename(storedFilename || file.name || "");
+    setShowDownloadModal(true);
+  };
 
-    // Send request to download and decrypt endpoint with blob response type
-    const response = await axios.post(
-      `http://localhost:5000/api/download-decrypt/${file.cid}`,
-      {
-        private_key: privateKey,
-        original_filename: file.name || `decrypted-${file.cid.slice(0, 8)}`
-      },
-      {
-        responseType: 'blob',
-        headers: {
-          'Content-Type': 'application/json'
+  // Handle file download and decryption
+  const handleDownloadAndDecrypt = async () => {
+    // Validate mandatory fields
+    if (!downloadCid || !downloadCid.trim()) {
+      toast.error("IPFS Content Identifier (CID) is required");
+      return;
+    }
+
+    if (!downloadPrivateKey || !downloadPrivateKey.trim()) {
+      toast.error("Kyber Private Key is required");
+      return;
+    }
+
+    // Use the original filename if available, otherwise use stored or file name
+    const originalFilename = downloadFilename.trim() || 
+                            (fileToDownload?.name) || 
+                            `decrypted-${downloadCid.slice(0, 8)}`;
+
+    try {
+      setIsLoading(true);
+      setShowDownloadModal(false);
+
+      toast.info("Decrypting file... Please wait.");
+
+      // Step 1: Decrypt the file (backend will decrypt first, then send)
+      const response = await axios.post(
+        `http://localhost:5000/api/download-decrypt/${downloadCid.trim()}`,
+        {
+          private_key: downloadPrivateKey.trim(),
+          original_filename: originalFilename
+        },
+        {
+          responseType: 'blob',  // Critical: ensures binary data handling
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Check if we got valid data back
+      if (!response.data) {
+        throw new Error("Received empty file data");
+      }
+
+      // Verify we have a Blob object (axios should return Blob when responseType is 'blob')
+      if (!(response.data instanceof Blob)) {
+        console.error('Response data is not a Blob!', typeof response.data, response.data);
+        throw new Error("Invalid response format - expected binary blob data");
+      }
+
+      const fileBlob = response.data;
+
+      if (fileBlob.size === 0) {
+        throw new Error("Received empty file data");
+      }
+
+      console.log(`[✅] Received blob: ${fileBlob.size} bytes, type: ${fileBlob.type}`);
+      
+      // Verify blob contains binary data (read first bytes to check)
+      fileBlob.slice(0, 4).arrayBuffer().then(buffer => {
+        const bytes = new Uint8Array(buffer);
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        console.log(`[🔍] First 4 bytes of received blob (hex): ${hex}`);
+        if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+          console.log('[✅] Blob contains JPEG signature - binary data is correct!');
+        } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+          console.log('[✅] Blob contains PNG signature - binary data is correct!');
+        } else {
+          console.warn(`[⚠️] Unknown blob signature: ${hex} - might be text or corrupted`);
+        }
+      }).catch(err => console.error('[❌] Could not verify blob bytes:', err));
+
+      // Get MIME type from response headers or infer from filename
+      const contentType = response.headers['content-type'] || response.headers['Content-Type'] || fileBlob.type;
+      let blobType = contentType;
+      
+      // If no content type, try to infer from filename extension
+      if (!blobType || blobType === 'application/octet-stream') {
+        const extension = originalFilename.split('.').pop()?.toLowerCase();
+        const mimeTypes = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'bmp': 'image/bmp',
+          'ico': 'image/x-icon',
+          'svg': 'image/svg+xml',
+          'pdf': 'application/pdf',
+          'txt': 'text/plain',
+          'doc': 'application/msword',
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'xls': 'application/vnd.ms-excel',
+          'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'zip': 'application/zip',
+          'mp4': 'video/mp4',
+          'mp3': 'audio/mpeg',
+          'webm': 'video/webm',
+          'ogg': 'audio/ogg'
+        };
+        blobType = mimeTypes[extension] || 'application/octet-stream';
+      }
+
+      // Use the blob directly with correct MIME type (don't wrap unnecessarily)
+      // Only create new blob if we need to change the type
+      const finalBlob = fileBlob.type === blobType ? fileBlob : new Blob([fileBlob], { type: blobType });
+      
+      // Step 2: Trigger download with proper filename and type
+      // Ensure filename has extension
+      let downloadFilename = originalFilename;
+      if (!downloadFilename.includes('.')) {
+        // If no extension, try to infer from MIME type
+        const extMap = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp',
+          'application/pdf': '.pdf'
+        };
+        const ext = extMap[blobType];
+        if (ext) {
+          downloadFilename = downloadFilename + ext;
         }
       }
-    );
+      
+      console.log(`[📥] Downloading as: ${downloadFilename} with type: ${blobType}`);
+      
+      const url = window.URL.createObjectURL(finalBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadFilename; // Set download attribute with extension
+      link.style.display = 'none';
+      
+      // Set type hint for the link
+      link.type = blobType;
+      
+      // Append link to document, click it, then remove it
+      document.body.appendChild(link);
+      link.click();
+      
+      // Wait a bit before removing to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
 
-    // Check if we got valid data back
-    if (!response.data || response.data.size === 0) {
-      throw new Error("Received empty file data");
+      toast.success(`✅ File decrypted and downloaded as: ${downloadFilename}`);
+
+    } catch (error) {
+      console.error('Error downloading/decrypting file:', error);
+      let errorMessage = 'Failed to decrypt and download file';
+
+      if (error.response) {
+        errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = 'Could not connect to server. Is the backend running?';
+      } else {
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+      // Reset form
+      setDownloadCid("");
+      setDownloadPrivateKey("");
+      setDownloadFilename("");
+      setFileToDownload(null);
     }
-
-    // Create a blob URL and trigger download
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', file.name || `decrypted-${file.cid.slice(0, 8)}`);
-    
-    // Append link to document, click it, then remove it
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Clean up the URL object after download
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url);
-    }, 100);
-
-    toast.success(`Successfully decrypted ${file.name || 'file'}`);
-
-  } catch (error) {
-    console.error('Error decrypting file:', error);
-    let errorMessage = 'Failed to decrypt file';
-
-    if (error.response) {
-      errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
-    } else if (error.request) {
-      errorMessage = 'Could not connect to server. Is the backend running?';
-    } else {
-      errorMessage = error.message || 'Unknown error occurred';
-    }
-
-    toast.error(errorMessage);
-  } finally {
-    setIsLoading(false);
-  }
-};  
+  };  
 
   // Function to truncate Ethereum address for display
   const truncateAddress = (address) => {
@@ -598,10 +658,20 @@ const handleDecrypt = async (file) => {
                       <Button
                         variant="outline-primary"
                         size="sm"
-                        onClick={() => handleDecrypt(file)}
+                        onClick={() => handleOpenDownloadModal(file)}
                         className="renaissance-btn-decrypt"
+                        disabled={isLoading}
                       >
-                        <i className="fas fa-download me-1"></i> Decrypt
+                        {isLoading ? (
+                          <>
+                            <Spinner animation="border" size="sm" className="me-1" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-download me-1"></i> Decrypt
+                          </>
+                        )}
                       </Button>
                       {file.isOwner && (
                         <>
@@ -761,10 +831,20 @@ const handleDecrypt = async (file) => {
               <div className="d-grid gap-3">
                 <Button
                   variant="primary"
-                  onClick={() => handleDownload(selectedFile.id)}
+                  onClick={() => handleOpenDownloadModal(selectedFile)}
                   className="renaissance-btn-download-large"
+                  disabled={isLoading}
                 >
-                  <i className="fas fa-download me-2"></i> Decrypt Artifact
+                  {isLoading ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-download me-2"></i> Decrypt Artifact
+                    </>
+                  )}
                 </Button>
 
                 {selectedFile.isOwner && (
@@ -992,6 +1072,116 @@ const handleDecrypt = async (file) => {
             </div>
           </Form>
         </Modal.Body>
+      </Modal>
+
+      {/* Download & Decrypt Modal */}
+      <Modal
+        show={showDownloadModal}
+        onHide={() => {
+          setShowDownloadModal(false);
+          setDownloadCid("");
+          setDownloadPrivateKey("");
+          setDownloadFilename("");
+          setFileToDownload(null);
+        }}
+        className="renaissance-modal"
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="fas fa-download me-2"></i>
+            Download & Decrypt File
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="info" className="mb-3">
+            <i className="fas fa-info-circle me-2"></i>
+            The file will be decrypted first, then downloaded with the original filename.
+          </Alert>
+          
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                IPFS Content Identifier (CID) <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter the CID of your encrypted file"
+                value={downloadCid}
+                onChange={(e) => setDownloadCid(e.target.value)}
+                required
+                className="renaissance-input"
+              />
+              <Form.Text className="text-muted">
+                The Content Identifier (CID) you received when uploading the file
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Kyber Private Key <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                placeholder="Paste your Kyber private key here"
+                value={downloadPrivateKey}
+                onChange={(e) => setDownloadPrivateKey(e.target.value)}
+                required
+                className="renaissance-input"
+                style={{ fontFamily: 'monospace' }}
+              />
+              <Form.Text className="text-muted">
+                The private key you saved when uploading the file (required for decryption)
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Original Filename</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g., myfile.jpg (auto-filled if available)"
+                value={downloadFilename}
+                onChange={(e) => setDownloadFilename(e.target.value)}
+                className="renaissance-input"
+              />
+              <Form.Text className="text-muted">
+                The original filename when you uploaded. Auto-filled if stored, or use the filename you uploaded with.
+              </Form.Text>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowDownloadModal(false);
+              setDownloadCid("");
+              setDownloadPrivateKey("");
+              setDownloadFilename("");
+              setFileToDownload(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleDownloadAndDecrypt}
+            disabled={!downloadCid.trim() || !downloadPrivateKey.trim() || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Decrypting...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-download me-2"></i>
+                Decrypt & Download
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

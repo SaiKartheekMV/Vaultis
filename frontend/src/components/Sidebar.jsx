@@ -18,7 +18,7 @@ function Sidebar() {
     } else if (fileOperationsPaths.some(path => currentPath.includes(path))) {
       setExpandedSubmenu('file-operations');
     }
-  }, [currentPath]);
+  }, [currentPath, fileEncryptionPaths, fileOperationsPaths]);
 
   const menuItems = [
     { path: '/', name: 'Dashboard', icon: '📊' },

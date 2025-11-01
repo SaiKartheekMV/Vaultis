@@ -1,93 +1,222 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import axios from 'axios';
-import { saveAs } from 'file-saver';
-import { LockOpen, Key, Database, Shield, FileDown } from 'lucide-react';
+import { Key, Database, Shield, FileDown } from 'lucide-react';
 
 const QuantumFileDownloader = () => {
   const [cid, setCid] = useState('');
   const [privateKey, setPrivateKey] = useState('');
-  const [privateKeyId, setPrivateKeyId] = useState('');
   const [originalFilename, setOriginalFilename] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [fetchKeyLoading, setFetchKeyLoading] = useState(false);
 
-  // API base URL - replace with your actual backend URL
-  const API_BASE_URL = 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-  // Function to fetch private key from backend using key ID
-  const fetchPrivateKey = async () => {
-    if (!privateKeyId) {
-      setError('Please enter a private key ID');
-      return;
-    }
-
-    try {
-      setFetchKeyLoading(true);
-      setError('');
-      
-      // Fixed: Using privateKeyId instead of keyName
-      const response = await axios.get(`${API_BASE_URL}/api/private-key/${privateKeyId}`);
-      
-      if (response.data && response.data.private_key) {
-        setPrivateKey(response.data.private_key);
-        setSuccess('Private key retrieved successfully!');
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError('Failed to retrieve private key');
-      }
-    } catch (err) {
-      console.error('Error fetching private key:', err);
-      setError(`Failed to fetch private key: ${err.response?.data?.error || err.message}`);
-    } finally {
-      setFetchKeyLoading(false);
-    }
-  };
-
-  // Function to download and decrypt file
   const downloadAndDecryptFile = async () => {
-    if (!cid) {
-      setError('Please enter a CID');
+    // Validate mandatory fields
+    if (!cid || !cid.trim()) {
+      setError('IPFS Content Identifier (CID) is required');
       return;
     }
 
-    if (!privateKey) {
-      setError('Please enter or fetch a private key');
+    if (!privateKey || !privateKey.trim()) {
+      setError('Kyber Private Key is required');
       return;
     }
+
+    // Use the original filename if available, otherwise use default
+    const downloadFilename = originalFilename.trim() || `decrypted-${cid.trim().substring(0, 8)}`;
 
     try {
       setLoading(true);
       setError('');
       setSuccess('');
       
-      // Make request to download-decrypt endpoint
-      const response = await axios({
-        url: `${API_BASE_URL}/api/download-decrypt`,
-        method: 'POST',
-        responseType: 'blob',
-        data: {
-          cid: cid,
-          private_key: privateKey,
-          original_filename: originalFilename || `decrypted-${cid.substring(0, 8)}`
+      // Step 1: Decrypt the file (backend will decrypt first, then send)
+      const response = await axios.post(
+        `${API_BASE_URL}/api/download-decrypt/${cid.trim()}`,
+        {
+          private_key: privateKey.trim(),
+          original_filename: downloadFilename
+        },
+        {
+          responseType: 'blob',  // Critical: ensures binary data handling
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
+
+      // Check if we got valid data back
+      if (!response.data) {
+        throw new Error("Received empty file data");
+      }
+
+      // Verify we have a Blob object (axios should return Blob when responseType is 'blob')
+      if (!(response.data instanceof Blob)) {
+        console.error('Response data is not a Blob!', typeof response.data, response.data);
+        throw new Error("Invalid response format - expected binary blob data");
+      }
+
+      const fileBlob = response.data;
+
+      if (fileBlob.size === 0) {
+        throw new Error("Received empty file data");
+      }
+
+      console.log(`[✅] Received blob: ${fileBlob.size} bytes, type: ${fileBlob.type}`);
       
-      // Create a blob URL and trigger download
-      const blob = new Blob([response.data]);
+      // Verify blob contains binary data (read first bytes to check)
+      const buffer = await fileBlob.slice(0, 4).arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.log(`[🔍] First 4 bytes of received blob (hex): ${hex}`);
       
-      // Use the original filename if provided, otherwise use a generated one
-      const filename = originalFilename || `decrypted-${cid.substring(0, 8)}`;
+      // Detect actual file type from magic numbers
+      let detectedType = null;
+      let detectedExtension = null;
       
-      // Save the file using file-saver
-      saveAs(blob, filename);
+      if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+        console.log('[✅] Blob contains JPEG signature - binary data is correct!');
+        detectedType = 'image/jpeg';
+        detectedExtension = '.jpg';
+      } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+        console.log('[✅] Blob contains PNG signature - binary data is correct!');
+        detectedType = 'image/png';
+        detectedExtension = '.png';
+      } else if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+        console.log('[✅] Blob contains GIF signature - binary data is correct!');
+        detectedType = 'image/gif';
+        detectedExtension = '.gif';
+      } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+        console.log('[✅] Blob contains WEBP signature - binary data is correct!');
+        detectedType = 'image/webp';
+        detectedExtension = '.webp';
+      } else if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
+        console.log('[✅] Blob contains PDF signature - binary data is correct!');
+        detectedType = 'application/pdf';
+        detectedExtension = '.pdf';
+      } else {
+        console.warn(`[⚠️] Unknown blob signature: ${hex} - will use filename extension`);
+      }
+
+      // Get MIME type - prioritize detected type from magic numbers
+      let blobType = detectedType;
       
-      setSuccess('File successfully downloaded and decrypted!');
+      // If not detected from magic numbers, try response headers
+      if (!blobType) {
+        const contentType = response.headers['content-type'] || response.headers['Content-Type'] || fileBlob.type;
+        blobType = contentType;
+      }
+      
+      // If still no content type, try to infer from filename extension
+      if (!blobType || blobType === 'application/octet-stream') {
+        const extension = downloadFilename.split('.').pop()?.toLowerCase();
+        const mimeTypes = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'bmp': 'image/bmp',
+          'ico': 'image/x-icon',
+          'svg': 'image/svg+xml',
+          'pdf': 'application/pdf',
+          'txt': 'text/plain',
+          'doc': 'application/msword',
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'xls': 'application/vnd.ms-excel',
+          'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'zip': 'application/zip',
+          'mp4': 'video/mp4',
+          'mp3': 'audio/mpeg',
+          'webm': 'video/webm',
+          'ogg': 'audio/ogg'
+        };
+        blobType = mimeTypes[extension] || 'application/octet-stream';
+      }
+
+      // Create blob with correct MIME type
+      const finalBlob = new Blob([fileBlob], { type: blobType });
+      
+      // Step 2: Trigger download with proper filename and type
+      // Ensure filename has the correct extension based on detected or inferred type
+      let finalFilename = downloadFilename;
+      
+      // If we detected the type from magic numbers, ensure correct extension
+      if (detectedExtension) {
+        const currentExtension = '.' + finalFilename.split('.').pop()?.toLowerCase();
+        // If filename has wrong extension or no extension, fix it
+        if (currentExtension !== detectedExtension) {
+          // Remove wrong extension if exists
+          if (finalFilename.includes('.')) {
+            finalFilename = finalFilename.substring(0, finalFilename.lastIndexOf('.'));
+          }
+          // Add correct extension
+          finalFilename = finalFilename + detectedExtension;
+        }
+      } else if (!finalFilename.includes('.')) {
+        // If no extension detected and filename has no extension, try to infer from MIME type
+        const extMap = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp',
+          'application/pdf': '.pdf',
+          'text/plain': '.txt',
+          'application/zip': '.zip'
+        };
+        const ext = extMap[blobType];
+        if (ext) {
+          finalFilename = finalFilename + ext;
+        }
+      }
+      
+      console.log(`[📥] Downloading as: ${finalFilename} with type: ${blobType}`);
+      
+      const url = window.URL.createObjectURL(finalBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = finalFilename;
+      link.style.display = 'none';
+      
+      // Set type hint for the link
+      link.type = blobType;
+      
+      // Append link to document, click it, then remove it
+      document.body.appendChild(link);
+      link.click();
+      
+      // Wait a bit before removing to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      setSuccess(`✅ File decrypted and downloaded successfully as: ${finalFilename}`);
+      
+      // Clear form after successful download
+      setTimeout(() => {
+        setCid('');
+        setPrivateKey('');
+        setOriginalFilename('');
+        setSuccess('');
+      }, 5000);
+      
     } catch (err) {
       console.error('Error downloading/decrypting file:', err);
-      setError(`Failed to download and decrypt: ${err.response?.data?.error || err.message}`);
+      let errorMessage = 'Failed to decrypt and download file';
+
+      if (err.response) {
+        errorMessage = err.response.data?.error || `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        errorMessage = 'Could not connect to server. Is the backend running?';
+      } else {
+        errorMessage = err.message || 'Unknown error occurred';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -154,8 +283,8 @@ const QuantumFileDownloader = () => {
                 </Alert>
               )}
 
-              <Form>
-                <Row className="mb-4 gx-4">
+              <Form onSubmit={(e) => { e.preventDefault(); downloadAndDecryptFile(); }}>
+                <Row className="mb-4">
                   <Col md={12}>
                     <Card className="p-3 mb-4" style={{
                       background: 'rgba(9, 11, 30, 0.6)',
@@ -167,11 +296,15 @@ const QuantumFileDownloader = () => {
                         IPFS Content Identifier
                       </h5>
                       <Form.Group className="mb-0">
+                        <Form.Label style={{ color: '#8b9eff' }}>
+                          IPFS Content Identifier (CID) <span style={{ color: '#ff6b81' }}>*</span>
+                        </Form.Label>
                         <Form.Control
                           type="text"
                           placeholder="Enter the CID of your encrypted file"
                           value={cid}
                           onChange={(e) => setCid(e.target.value)}
+                          required
                           style={{
                             background: 'rgba(13, 17, 23, 0.8)',
                             border: '1px solid #2e3860',
@@ -181,14 +314,14 @@ const QuantumFileDownloader = () => {
                           }}
                         />
                         <Form.Text style={{ color: '#8b9eff' }}>
-                          The Content Identifier (CID) received when you uploaded the file
+                          The Content Identifier (CID) received when you uploaded the file (required)
                         </Form.Text>
                       </Form.Group>
                     </Card>
                   </Col>
                 </Row>
 
-                <Row className="gx-4">
+                <Row className="mb-4">
                   <Col md={12}>
                     <Card className="p-3 mb-4" style={{
                       background: 'rgba(9, 11, 30, 0.6)',
@@ -199,54 +332,17 @@ const QuantumFileDownloader = () => {
                         <Key className="me-2" />
                         Kyber Private Key
                       </h5>
-                      
-                      <Form.Group className="mb-3">
-                        <Form.Label style={{ color: '#8b9eff' }}>Option 1: Fetch key from server</Form.Label>
-                        <div className="d-flex">
-                          <Form.Control
-                            type="text"
-                            placeholder="Enter private key ID"
-                            value={privateKeyId}
-                            onChange={(e) => setPrivateKeyId(e.target.value)}
-                            style={{
-                              background: 'rgba(13, 17, 23, 0.8)',
-                              border: '1px solid #2e3860',
-                              color: '#ffffff',
-                              padding: '10px',
-                              borderRadius: '6px'
-                            }}
-                          />
-                          <Button 
-                            variant="outline-primary" 
-                            onClick={fetchPrivateKey}
-                            disabled={fetchKeyLoading || !privateKeyId}
-                            className="ms-2"
-                            style={{
-                              borderColor: '#4263eb',
-                              color: '#4263eb',
-                              minWidth: '100px'
-                            }}
-                          >
-                            {fetchKeyLoading ? (
-                              <Spinner animation="border" size="sm" />
-                            ) : (
-                              'Fetch Key'
-                            )}
-                          </Button>
-                        </div>
-                        <Form.Text style={{ color: '#8b9eff' }}>
-                          The private key ID received during upload
-                        </Form.Text>
-                      </Form.Group>
-
                       <Form.Group>
-                        <Form.Label style={{ color: '#8b9eff' }}>Option 2: Paste your private key</Form.Label>
+                        <Form.Label style={{ color: '#8b9eff' }}>
+                          Kyber Private Key <span style={{ color: '#ff6b81' }}>*</span>
+                        </Form.Label>
                         <Form.Control
                           as="textarea"
                           rows={4}
-                          placeholder="Paste your Kyber private key here"
+                          placeholder="Paste your Kyber private key here (saved during upload)"
                           value={privateKey}
                           onChange={(e) => setPrivateKey(e.target.value)}
+                          required
                           style={{
                             background: 'rgba(13, 17, 23, 0.8)',
                             border: '1px solid #2e3860',
@@ -256,6 +352,9 @@ const QuantumFileDownloader = () => {
                             fontFamily: 'monospace'
                           }}
                         />
+                        <Form.Text style={{ color: '#8b9eff' }}>
+                          Paste the private key you saved when uploading the file (required for decryption)
+                        </Form.Text>
                       </Form.Group>
                     </Card>
                   </Col>
@@ -267,18 +366,19 @@ const QuantumFileDownloader = () => {
                       <Form.Label style={{ color: '#8b9eff' }}>Original Filename (Optional)</Form.Label>
                       <Form.Control
                         type="text"
-                        placeholder="Original filename (if known)"
+                        placeholder="e.g., myfile.png (optional - will auto-generate if not provided)"
                         value={originalFilename}
                         onChange={(e) => setOriginalFilename(e.target.value)}
                         style={{
                           background: 'rgba(13, 17, 23, 0.8)',
                           border: '1px solid #2e3860',
                           color: '#ffffff',
-                          padding: '10px'
+                          padding: '10px',
+                          borderRadius: '6px'
                         }}
                       />
                       <Form.Text style={{ color: '#8b9eff' }}>
-                        If left blank, a generated filename will be used
+                        The original filename when you uploaded. If not provided, will use a default name.
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -286,23 +386,24 @@ const QuantumFileDownloader = () => {
 
                 <div className="d-grid gap-2">
                   <Button 
+                    type="submit"
                     variant="primary" 
                     size="lg" 
-                    onClick={downloadAndDecryptFile}
                     disabled={loading || !cid || !privateKey}
                     style={{
-                      background: 'linear-gradient(135deg, #ff2155, #e6123d)',
+                      background: loading ? '#666' : 'linear-gradient(135deg, #ff2155, #e6123d)',
                       border: 'none',
                       padding: '14px',
-                      boxShadow: '0 5px 15px rgba(255, 33, 85, 0.4)',
+                      boxShadow: loading ? 'none' : '0 5px 15px rgba(255, 33, 85, 0.4)',
                       fontWeight: 'bold',
-                      letterSpacing: '1px'
+                      letterSpacing: '1px',
+                      cursor: loading ? 'not-allowed' : 'pointer'
                     }}
                   >
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Processing...
+                        Decrypting and Downloading...
                       </>
                     ) : (
                       <>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './FileDetails.css'; // Import your CSS file for styles
 
@@ -57,7 +57,7 @@ function FileDetails({ file, fileId, currentAddress, contract, onRefresh }) {
   };
 
   // Load access list
-  const loadAccessList = async () => {
+  const loadAccessList = useCallback(async () => {
     if (!contract || !fileId) {
       console.log("Cannot load access list - missing contract or fileId");
       return;
@@ -74,7 +74,7 @@ function FileDetails({ file, fileId, currentAddress, contract, onRefresh }) {
     } finally {
       setIsLoadingAccess(false);
     }
-  };
+  }, [contract, fileId, currentAddress]);
 
   // Handle file download
   const handleDownload = async () => {
@@ -221,14 +221,14 @@ function FileDetails({ file, fileId, currentAddress, contract, onRefresh }) {
         }
       })();
     }
-  }, [file, contract, fileId, currentAddress]);
+  }, [file, contract, fileId, currentAddress, fetchFileCID]);
 
   // Effect to load access list when component loads
   useEffect(() => {
     if (file && fileId && contract && currentAddress) {
       loadAccessList();
     }
-  }, [file, fileId, contract, currentAddress]);
+  }, [file, fileId, contract, currentAddress, loadAccessList]);
 
   if (!file) {
     return <div className="file-details-container">No file data available</div>;
